@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  PATIENT
+  CLINICIAN
+  LAB
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  phone        String?
+  role         UserRole
+  emailVerified Boolean @default(false)
+  resetToken    String?
+  resetExpires  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  healthRecordsAuthored HealthRecord[] @relation("AuthorRecords")
+  healthRecordsAsPatient HealthRecord[] @relation("PatientRecords")
+  labResultsAsPatient   LabResult[] @relation("LabPatient")
+  labResultsUploaded    LabResult[] @relation("LabUploader")
+  appointments          Appointment[] @relation("PatientAppointments")
+  appointmentsCreated   Appointment[] @relation("AppointmentCreatedBy")
+  appointmentsAsClinician Appointment[] @relation("AppointmentClinician")
+}
+
+model HealthRecord {
+  id           String   @id @default(cuid())
+  patientId    String
+  patient      User     @relation("PatientRecords", fields: [patientId], references: [id], onDelete: Cascade)
+  authorId     String?
+  author       User?    @relation("AuthorRecords", fields: [authorId], references: [id], onDelete: SetNull)
+  title        String
+  summary      String
+  facilityName String
+  visitDate    DateTime
+  createdAt    DateTime @default(now())
+}
+
+model LabResult {
+  id             String   @id @default(cuid())
+  patientId      String
+  patient        User     @relation("LabPatient", fields: [patientId], references: [id], onDelete: Cascade)
+  uploadedById   String
+  uploadedBy     User     @relation("LabUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+  testCode       String
+  testName       String
+  value          String
+  unit           String
+  referenceRange String?
+  status         String   @default("FINAL")
+  collectedAt    DateTime
+  reportedAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
+}
+
+model Appointment {
+  id           String   @id @default(cuid())
+  patientId    String
+  patient      User     @relation("PatientAppointments", fields: [patientId], references: [id], onDelete: Cascade)
+  createdById  String?
+  createdBy    User?    @relation("AppointmentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  clinicianId  String?
+  clinician    User?    @relation("AppointmentClinician", fields: [clinicianId], references: [id], onDelete: SetNull)
+  title        String
+  facilityName String
+  scheduledAt  DateTime
+  status       String   @default("SCHEDULED")
+  notes        String?
+  createdAt    DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  resource  String
+  meta      String?
+  createdAt DateTime @default(now())
+}
