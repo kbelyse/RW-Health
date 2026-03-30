@@ -62,7 +62,7 @@ const resetSchema = z.object({
     code: z.string().min(6).max(64),
     newPassword: z.string().min(10).max(128),
 });
-const ACCESS_MAX_AGE_MS = 8 * 60 * 60 * 1000;
+const ACCESS_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 function accessCookieSetOpts(cfg: AppConfig) {
     return {
         httpOnly: true,

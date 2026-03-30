@@ -9,7 +9,7 @@ export interface JwtPayload {
 }
 export function signAccessToken(payload: Omit<JwtPayload, "activeRole"> & {
     activeRole?: UserRole;
-}, secret: string, expiresSeconds: number = 8 * 60 * 60): string {
+}, secret: string, expiresSeconds: number = 24 * 60 * 60): string {
     const opts: SignOptions = { expiresIn: expiresSeconds };
     const activeRole = payload.activeRole ?? payload.role;
     return jwt.sign({

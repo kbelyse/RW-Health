@@ -19,12 +19,21 @@ import { createClinicianSlotsRouter } from "./routes/clinician-slots.js";
 const cfg = loadConfig();
 const app = express();
 app.set("trust proxy", 1);
+const corsOrigins = cfg.CORS_ORIGIN.split(",").map((s) => s.trim()).filter(Boolean);
+if (corsOrigins.length === 0)
+    corsOrigins.push("http://localhost:5173");
 app.use(helmet({
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
 }));
 app.use(cors({
-    origin: cfg.CORS_ORIGIN,
+    origin: (origin, cb) => {
+        if (!origin)
+            return cb(null, true);
+        if (corsOrigins.includes(origin))
+            return cb(null, true);
+        return cb(null, false);
+    },
     credentials: true,
 }));
 app.use(express.json({ limit: "512kb" }));

@@ -6,6 +6,8 @@ import { prisma } from "../lib/prisma.js";
 export interface AuthedRequest extends Request {
     userId?: string;
     userRole?: UserRole;
+    /** Set by requireDbRoles after loading the user row (primary + secondary roles). */
+    dbUser?: { id: string; role: UserRole; secondaryRole: UserRole | null };
 }
 const COOKIE = "rw_access";
 export function getTokenFromRequest(req: Request): string | undefined {
@@ -71,6 +73,30 @@ export function requireRoles(...roles: UserRole[]) {
             res.status(403).json({ error: "Forbidden" });
             return;
         }
+        next();
+    };
+}
+/** Use for capabilities tied to primary/secondary roles (not only JWT activeRole). Requires valid session. */
+export function requireDbRoles(...allowed: UserRole[]) {
+    return async (req: AuthedRequest, res: Response, next: NextFunction) => {
+        if (!req.userId) {
+            res.status(401).json({ error: "Unauthorized" });
+            return;
+        }
+        const user = await prisma.user.findUnique({
+            where: { id: req.userId },
+            select: { id: true, role: true, secondaryRole: true },
+        });
+        if (!user) {
+            res.status(401).json({ error: "Unauthorized" });
+            return;
+        }
+        const poss = [user.role, user.secondaryRole].filter((x): x is UserRole => x != null);
+        if (!allowed.some((a) => poss.includes(a))) {
+            res.status(403).json({ error: "Forbidden" });
+            return;
+        }
+        req.dbUser = user;
         next();
     };
 }
