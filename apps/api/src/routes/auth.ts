@@ -57,6 +57,24 @@ const resetSchema = z.object({
     code: z.string().min(6).max(64),
     newPassword: z.string().min(10).max(128),
 });
+const ACCESS_MAX_AGE_MS = 8 * 60 * 60 * 1000;
+function accessCookieSetOpts(cfg: AppConfig) {
+    return {
+        httpOnly: true,
+        sameSite: "lax" as const,
+        secure: cfg.COOKIE_SECURE === true,
+        maxAge: ACCESS_MAX_AGE_MS,
+        path: "/",
+    };
+}
+function accessCookieClearOpts(cfg: AppConfig) {
+    return {
+        httpOnly: true,
+        sameSite: "lax" as const,
+        secure: cfg.COOKIE_SECURE === true,
+        path: "/",
+    };
+}
 export function createAuthRouter(cfg: AppConfig): Router {
     const r = Router();
     r.post("/register", async (req, res) => {
@@ -107,17 +125,15 @@ export function createAuthRouter(cfg: AppConfig): Router {
             secondaryRole: user.secondaryRole ?? undefined,
             activeRole: user.role,
         }, cfg.JWT_SECRET);
-        res.cookie(cookieName, token, {
-            httpOnly: true,
-            sameSite: "lax",
-            secure: cfg.COOKIE_SECURE === true,
-            maxAge: 8 * 60 * 60 * 1000,
-            path: "/",
-        });
-        await sendWelcomeEmail(cfg, user.email, user.fullName);
-        await audit(user.id, "REGISTER", "User", { email: user.email });
+        res.cookie(cookieName, token, accessCookieSetOpts(cfg));
         res.json({
             user: { ...normalizeUserResponse(user, user.role), emailVerified: false },
+        });
+        void sendWelcomeEmail(cfg, user.email, user.fullName).catch((err) => {
+            console.error("[auth] welcome email failed:", err);
+        });
+        void audit(user.id, "REGISTER", "User", { email: user.email }).catch((err) => {
+            console.error("[auth] register audit failed:", err);
         });
     });
     r.post("/login", async (req, res) => {
@@ -144,14 +160,7 @@ export function createAuthRouter(cfg: AppConfig): Router {
             secondaryRole: user.secondaryRole ?? undefined,
             activeRole: user.role,
         }, cfg.JWT_SECRET);
-        res.cookie(cookieName, token, {
-            httpOnly: true,
-            sameSite: "lax",
-            secure: cfg.COOKIE_SECURE === true,
-            maxAge: 8 * 60 * 60 * 1000,
-            path: "/",
-        });
-        await audit(user.id, "LOGIN", "User");
+        res.cookie(cookieName, token, accessCookieSetOpts(cfg));
         res.json({
             user: {
                 ...normalizeUserResponse({
@@ -164,10 +173,24 @@ export function createAuthRouter(cfg: AppConfig): Router {
                 emailVerified: user.emailVerified,
             },
         });
+        void audit(user.id, "LOGIN", "User").catch((err) => {
+            console.error("[auth] login audit failed:", err);
+        });
     });
-    r.post("/logout", requireAuth, async (req: AuthedRequest, res) => {
-        res.clearCookie(cookieName, { path: "/" });
-        await audit(req.userId, "LOGOUT", "User");
+    r.post("/logout", (req, res) => {
+        res.clearCookie(cookieName, accessCookieClearOpts(cfg));
+        const token = getTokenFromRequest(req);
+        if (token) {
+            try {
+                const payload = verifyAccessToken(token, cfg.JWT_SECRET);
+                void audit(payload.sub, "LOGOUT", "User").catch((err) => {
+                    console.error("[auth] logout audit failed:", err);
+                });
+            }
+            catch {
+                /* expired or invalid token — cookie cleared above */
+            }
+        }
         res.json({ ok: true });
     });
     r.get("/me", async (req: AuthedRequest, res) => {
@@ -233,16 +256,12 @@ export function createAuthRouter(cfg: AppConfig): Router {
             secondaryRole: dbUser.secondaryRole ?? undefined,
             activeRole: target,
         }, cfg.JWT_SECRET);
-        res.cookie(cookieName, newToken, {
-            httpOnly: true,
-            sameSite: "lax",
-            secure: cfg.COOKIE_SECURE === true,
-            maxAge: 8 * 60 * 60 * 1000,
-            path: "/",
-        });
-        await audit(dbUser.id, "SWITCH_ROLE", "User", { activeRole: target });
+        res.cookie(cookieName, newToken, accessCookieSetOpts(cfg));
         res.json({
             user: { ...normalizeUserResponse(dbUser, target), emailVerified: dbUser.emailVerified },
+        });
+        void audit(dbUser.id, "SWITCH_ROLE", "User", { activeRole: target }).catch((err) => {
+            console.error("[auth] switch-role audit failed:", err);
         });
     });
     r.post("/forgot-password", async (req, res) => {
@@ -264,9 +283,13 @@ export function createAuthRouter(cfg: AppConfig): Router {
             where: { id: user.id },
             data: { resetToken: hash, resetExpires: exp },
         });
-        await sendPasswordResetEmail(cfg, user.email, user.fullName, code);
-        await audit(user.id, "PASSWORD_RESET_REQUEST", "User");
         res.json({ ok: true });
+        void sendPasswordResetEmail(cfg, user.email, user.fullName, code).catch((err) => {
+            console.error("[auth] password-reset email failed:", err);
+        });
+        void audit(user.id, "PASSWORD_RESET_REQUEST", "User").catch((err) => {
+            console.error("[auth] forgot-password audit failed:", err);
+        });
     });
     r.post("/reset-password", async (req, res) => {
         const parsed = resetSchema.safeParse(req.body);
@@ -298,8 +321,10 @@ export function createAuthRouter(cfg: AppConfig): Router {
                 resetExpires: null,
             },
         });
-        await audit(user.id, "PASSWORD_RESET_COMPLETE", "User");
         res.json({ ok: true });
+        void audit(user.id, "PASSWORD_RESET_COMPLETE", "User").catch((err) => {
+            console.error("[auth] reset-password audit failed:", err);
+        });
     });
     return r;
 }
