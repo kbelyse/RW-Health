@@ -31,24 +31,31 @@ function BarCompare({ title, rows, }: {
       </div>
     </div>);
 }
-function MetricCard({ icon: Icon, value, label, title: hint, }: {
+function MetricCard({ icon: Icon, value, label, title: hint, to, }: {
     icon: LucideIcon;
     value: string | number;
     label: string;
     title?: string;
+    to?: string;
 }) {
-    return (<div className="rounded-2xl bg-gradient-to-br from-[#0059B3]/35 via-[#0059B3]/12 to-[#0059B3]/20 p-px shadow-sm">
-      <div className="flex min-h-[7.5rem] flex-col justify-between rounded-[15px] bg-white p-4 md:min-h-[8rem] md:p-5" title={hint}>
-        <Icon className="h-6 w-6 shrink-0 text-[#0059B3]" strokeWidth={1.75} aria-hidden/>
-        <div>
-          <p className="font-display text-2xl font-bold tabular-nums tracking-tight text-slate-900 md:text-3xl">
-            {value}
-          </p>
-          <p className="mt-1 text-[11px] font-semibold uppercase leading-tight tracking-wide text-slate-500">
-            {label}
-          </p>
-        </div>
+    const inner = (<div className={`flex min-h-[7.5rem] flex-col justify-between rounded-[15px] bg-white p-4 md:min-h-[8rem] md:p-5 ${to ? "transition group-hover:bg-slate-50/80" : ""}`} title={hint}>
+      <Icon className="h-6 w-6 shrink-0 text-[#0059B3]" strokeWidth={1.75} aria-hidden/>
+      <div>
+        <p className="font-display text-2xl font-bold tabular-nums tracking-tight text-slate-900 md:text-3xl">
+          {value}
+        </p>
+        <p className="mt-1 text-[11px] font-semibold uppercase leading-tight tracking-wide text-slate-500">
+          {label}
+        </p>
       </div>
+    </div>);
+    if (to) {
+        return (<Link to={to} className="group block rounded-2xl bg-gradient-to-br from-[#0059B3]/35 via-[#0059B3]/12 to-[#0059B3]/20 p-px shadow-sm ring-1 ring-transparent transition hover:ring-[#0059B3]/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0059B3]">
+        {inner}
+      </Link>);
+    }
+    return (<div className="rounded-2xl bg-gradient-to-br from-[#0059B3]/35 via-[#0059B3]/12 to-[#0059B3]/20 p-px shadow-sm">
+      {inner}
     </div>);
 }
 function SkeletonOverview() {
@@ -82,7 +89,6 @@ type OverviewClinician = {
     visitNotesLogged: number;
     appointmentsAsClinician: number;
     upcomingScheduledNext7Days: number;
-    pendingPatientRequests: number;
     patientsOnPlatform: number;
     labResultsInSystem: number;
 };
@@ -161,14 +167,14 @@ export function DashboardOverviewPage() {
         {loading && <SkeletonOverview />}
         {!loading && patient && (<>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <MetricCard icon={FileText} value={patient.healthRecords} label="Health records"/>
-              <MetricCard icon={FlaskConical} value={patient.labResults} label="Lab results"/>
-              <MetricCard icon={Calendar} value={patient.appointments} label="Appointments"/>
-              <MetricCard icon={Layers} value={patient.upcomingAppointments} label="Upcoming"/>
-              <MetricCard icon={UserCheck} value={patient.appointmentsRequested} label="Requested"/>
-              <MetricCard icon={Calendar} value={patient.appointmentsScheduled} label="Booked"/>
-              <MetricCard icon={Stethoscope} value={patient.cliniciansOnPlatform} label="Clinicians"/>
-              <MetricCard icon={Layers} value={patient.healthRecords + patient.labResults + patient.appointments} label="Records + labs + visits" title="Sum of your visit records, lab result rows, and appointments"/>
+              <MetricCard icon={FileText} value={patient.healthRecords} label="Medical records" title="Clinical visit notes from your care team" to="/dashboard/records"/>
+              <MetricCard icon={FlaskConical} value={patient.labResults} label="Lab results" title="Structured tests and reports from laboratories" to="/dashboard/labs"/>
+              <MetricCard icon={Calendar} value={patient.appointments} label="Appointments" to="/dashboard/appointments"/>
+              <MetricCard icon={Layers} value={patient.upcomingAppointments} label="Upcoming" to="/dashboard/appointments"/>
+              <MetricCard icon={UserCheck} value={patient.appointmentsRequested} label="Requested" to="/dashboard/appointments"/>
+              <MetricCard icon={Calendar} value={patient.appointmentsScheduled} label="Booked" to="/dashboard/appointments"/>
+              <MetricCard icon={Stethoscope} value={patient.cliniciansOnPlatform} label="Clinicians" to="/dashboard/care-team"/>
+              <MetricCard icon={Layers} value={patient.healthRecords + patient.labResults + patient.appointments} label="Total items" title="Sum of medical records, lab rows, and appointments"/>
             </div>
             <div className="mt-6 grid gap-6 lg:grid-cols-2">
               <BarCompare title="Passport mix" rows={[
@@ -197,18 +203,16 @@ export function DashboardOverviewPage() {
         {loading && <SkeletonOverview />}
         {!loading && clinician && (<>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <MetricCard icon={FileText} value={clinician.visitNotesLogged} label="Visit notes"/>
-              <MetricCard icon={Calendar} value={clinician.appointmentsAsClinician} label="Your appointments"/>
-              <MetricCard icon={Calendar} value={clinician.upcomingScheduledNext7Days} label="Next 7 days"/>
-              <MetricCard icon={UserCheck} value={clinician.pendingPatientRequests} label="Pending requests"/>
-              <MetricCard icon={Users} value={clinician.patientsOnPlatform} label="Patients (platform)"/>
-              <MetricCard icon={FlaskConical} value={clinician.labResultsInSystem} label="Lab results (system)"/>
+              <MetricCard icon={FileText} value={clinician.visitNotesLogged} label="Visit notes you authored" title="Published and draft notes you created on patient charts" to="/dashboard/patients"/>
+              <MetricCard icon={Calendar} value={clinician.appointmentsAsClinician} label="Your appointments" to="/dashboard/appointments"/>
+              <MetricCard icon={Calendar} value={clinician.upcomingScheduledNext7Days} label="Next 7 days" to="/dashboard/appointments"/>
+              <MetricCard icon={Users} value={clinician.patientsOnPlatform} label="Patients (platform)" to="/dashboard/patients"/>
+              <MetricCard icon={FlaskConical} value={clinician.labResultsInSystem} label="Lab results (system)" title="All lab rows in the system (read-only context)" to="/dashboard/patients"/>
             </div>
             <div className="mt-6 max-w-xl">
               <BarCompare title="Schedule focus" rows={[
                     { label: "Next 7 days", value: clinician.upcomingScheduledNext7Days, color: BK },
-                    { label: "Pending requests", value: clinician.pendingPatientRequests, color: "#d97706" },
-                    { label: "All your appts", value: clinician.appointmentsAsClinician, color: "#0d9488" },
+                    { label: "All your appointments", value: clinician.appointmentsAsClinician, color: "#0d9488" },
                 ]}/>
             </div>
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -224,12 +228,12 @@ export function DashboardOverviewPage() {
         {loading && <SkeletonOverview />}
         {!loading && lab && (<>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <MetricCard icon={Microscope} value={lab.resultsUploadedByYou} label="Your uploads"/>
-              <MetricCard icon={Users} value={lab.distinctPatientsServed} label="Patients served"/>
-              <MetricCard icon={FlaskConical} value={lab.uploadsLast7Days} label="Last 7 days"/>
-              <MetricCard icon={FlaskConical} value={lab.totalLabResultsInSystem} label="Labs (system)"/>
-              <MetricCard icon={Users} value={lab.patientsOnPlatform} label="Patients (platform)"/>
-              <MetricCard icon={Calendar} value={lab.appointmentsInSystem} label="Appointments"/>
+              <MetricCard icon={Microscope} value={lab.resultsUploadedByYou} label="Your uploads" to="/dashboard/upload"/>
+              <MetricCard icon={Users} value={lab.distinctPatientsServed} label="Patients served" to="/dashboard/upload"/>
+              <MetricCard icon={FlaskConical} value={lab.uploadsLast7Days} label="Last 7 days" to="/dashboard/upload"/>
+              <MetricCard icon={FlaskConical} value={lab.totalLabResultsInSystem} label="Labs (system)" to="/dashboard/upload"/>
+              <MetricCard icon={Users} value={lab.patientsOnPlatform} label="Patients (platform)" to="/dashboard/upload"/>
+              <MetricCard icon={Calendar} value={lab.appointmentsInSystem} label="Appointments" to="/dashboard/upload"/>
               <MetricCard icon={Microscope} value={lab.labAccountsOnPlatform} label="Lab accounts"/>
             </div>
             <div className="mt-6 grid gap-6 lg:grid-cols-2">

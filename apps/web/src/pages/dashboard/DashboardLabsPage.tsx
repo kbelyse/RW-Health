@@ -38,7 +38,8 @@ export function DashboardLabsPage() {
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-600">Labs</p>
       <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-slate-900">Lab results</h1>
       <p className="mt-3 max-w-2xl text-sm text-slate-600">
-        Values from your lab account. Attachments open in a new tab when present.
+        Measurements from the laboratory (test name, result, unit, reference range). For your clinician&apos;s written
+        summary of a visit, open <strong>Medical records</strong> instead.
       </p>
       {err && (
         <p className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">

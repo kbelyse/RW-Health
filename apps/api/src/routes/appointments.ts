@@ -186,6 +186,24 @@ export function createAppointmentsRouter(cfg: AppConfig): Router {
       res.status(400).json({ error: "Nothing to update" });
       return;
     }
+    if (existing.notesPublishedAt) {
+      if (parsed.data.notes !== undefined || parsed.data.title !== undefined) {
+        res.status(403).json({
+          error: "Visit notes are published and locked. They can no longer be edited.",
+        });
+        return;
+      }
+    }
+    if (
+      parsed.data.notes !== undefined &&
+      existing.scheduledAt > new Date() &&
+      !existing.notesPublishedAt
+    ) {
+      res.status(400).json({
+        error: "Visit notes can only be added or changed after the scheduled visit time.",
+      });
+      return;
+    }
     const updated = await prisma.appointment.update({
       where: { id },
       data,
@@ -195,6 +213,50 @@ export function createAppointmentsRouter(cfg: AppConfig): Router {
       },
     });
     await audit(uid, "PATCH_APPOINTMENT", "Appointment", { id });
+    res.json({ appointment: updated });
+  });
+
+  r.post("/:id/publish-notes", requireAuth, async (req: AuthedRequest, res) => {
+    const role = req.userRole!;
+    const uid = req.userId!;
+    if (role !== UserRole.CLINICIAN && role !== UserRole.ADMIN) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    const id = typeof req.params.id === "string" ? req.params.id : "";
+    if (!id) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const existing = await prisma.appointment.findUnique({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (role === UserRole.CLINICIAN && existing.clinicianId !== uid) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    if (existing.notesPublishedAt) {
+      res.status(400).json({ error: "Notes are already published" });
+      return;
+    }
+    const now = new Date();
+    if (existing.scheduledAt > now) {
+      res.status(400).json({
+        error: "You can only publish visit notes after the scheduled visit time.",
+      });
+      return;
+    }
+    const updated = await prisma.appointment.update({
+      where: { id },
+      data: { notesPublishedAt: new Date() },
+      include: {
+        ...appointmentInclude,
+        patient: { select: { fullName: true, email: true } },
+      },
+    });
+    await audit(uid, "PUBLISH_APPOINTMENT_NOTES", "Appointment", { id });
     res.json({ appointment: updated });
   });
 

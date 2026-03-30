@@ -41,7 +41,7 @@ export function createDashboardRouter(): Router {
         if (role === UserRole.CLINICIAN) {
             const now = new Date();
             const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-            const [visitNotesLogged, appointmentsAsClinician, upcomingScheduled, pendingRequestsForYou, patientsOnPlatform, labResultsInSystem,] = await Promise.all([
+            const [visitNotesLogged, appointmentsAsClinician, upcomingScheduled, patientsOnPlatform, labResultsInSystem,] = await Promise.all([
                 prisma.healthRecord.count({ where: { authorId: uid } }),
                 prisma.appointment.count({ where: { clinicianId: uid } }),
                 prisma.appointment.count({
@@ -49,12 +49,6 @@ export function createDashboardRouter(): Router {
                         clinicianId: uid,
                         status: "SCHEDULED",
                         scheduledAt: { gte: now, lte: weekEnd },
-                    },
-                }),
-                prisma.appointment.count({
-                    where: {
-                        clinicianId: uid,
-                        status: "REQUESTED",
                     },
                 }),
                 prisma.user.count({ where: whereUserHasPatientCapability }),
@@ -65,7 +59,6 @@ export function createDashboardRouter(): Router {
                     visitNotesLogged,
                     appointmentsAsClinician,
                     upcomingScheduledNext7Days: upcomingScheduled,
-                    pendingPatientRequests: pendingRequestsForYou,
                     patientsOnPlatform,
                     labResultsInSystem,
                 },
