@@ -1,10 +1,14 @@
-# RW-Health Passport — A Web-Based Platform for Health Records and Laboratory Results (Rwanda)
+# RW-Health Passport — A Web-Based Platform for Health Records and Laboratory Results
 
-**Repository:** [github.com/kbelyse/RW-Health](https://github.com/kbelyse/RW-Health) · **Live app:** [rw-health.onrender.com](https://rw-health.onrender.com/) · **SRS (Google Doc):** [open document](https://docs.google.com/document/d/19RksatWQPfJONQPQNpZ_BXnrMslHZHepvUOEkU6mMNQ/edit)
+**Repository:** [github.com/kbelyse/RW-Health](https://github.com/kbelyse/RW-Health) 
+
+**Live app:** [rw-health.onrender.com](https://rw-health.onrender.com/) 
+
+**SRS (Google Doc):** [open document](https://docs.google.com/document/d/19RksatWQPfJONQPQNpZ_BXnrMslHZHepvUOEkU6mMNQ/edit)
 
 ---
 
-## How to run locally (every step)
+## How to run locally
 
 **Prerequisites:** Node.js **20+** (`node -v`), Git (`git --version`), npm (`npm -v`).
 
@@ -17,9 +21,9 @@
 
 3. **Env file**  
    `npm run setup`  
-   Creates `apps/api/.env` from `.env.example` if missing. **Do not commit** `apps/api/.env`.
+   Creates `apps/api/.env` from `.env.example`.
 
-4. **Check** `apps/api/.env`: `DATABASE_URL` is set; `JWT_SECRET` is at least **32 characters** for anything beyond a local throwaway demo.
+4. **Check** `apps/api/.env`: `DATABASE_URL` is set; `JWT_SECRET`
 
 5. **Database** (from repository root)  
    `npm run db:push`
@@ -37,7 +41,7 @@
 9. **Stop**  
    Press **Ctrl+C** in that terminal.
 
-### Demo accounts (after `npm run db:seed`)
+### Demo accounts (after `npm run db:seed`) -- These accounts works only loaclly
 
 | Role | Email | Password |
 |------|--------|----------|
@@ -54,12 +58,14 @@ Optional: to run a **production build** on your machine after `npm run build`, u
 
 | Path | Role |
 |------|------|
-| `apps/web` | React + Vite + Tailwind PWA |
+| `apps/web` | React + Vite + Tailwind |
 | `apps/api` | Express + Prisma + SQLite |
 | `packages/shared` | Shared TypeScript types |
 
-Never commit `apps/api/.env` or other secrets.
-
-Summative video (5–10 min): script and demo order in [`docs/video-presentation-script.md`](docs/video-presentation-script.md).
-
 ---
+
+| Setting | Value |
+|--------|--------|
+| Root directory | *(monorepo root)* |
+| Build command | `npm run build:render` |
+| Start command | `npm run start:prod` |
