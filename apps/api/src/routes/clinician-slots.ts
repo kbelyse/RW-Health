@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
-import { requireAuth, requireRoles, type AuthedRequest } from "../middleware/auth.js";
+import { requireAuth, requireDbRoles, type AuthedRequest } from "../middleware/auth.js";
 import { UserRole } from "@prisma/client";
 import { whereUserIsClinicianWithId } from "../lib/roleQueries.js";
 import { audit } from "../lib/audit.js";
@@ -215,17 +215,18 @@ export function createClinicianSlotsRouter(cfg: AppConfig): Router {
     res.status(403).json({ error: "Forbidden" });
   });
 
-  r.post("/", requireAuth, requireRoles(UserRole.CLINICIAN, UserRole.ADMIN), async (req: AuthedRequest, res) => {
+  r.post("/", requireDbRoles(UserRole.CLINICIAN, UserRole.ADMIN), async (req: AuthedRequest, res) => {
     const parsed = createSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: "Invalid input" });
       return;
     }
-    const role = req.userRole!;
+    const dbUser = req.dbUser!;
     const uid = req.userId!;
+    const isAdmin = dbUser.role === UserRole.ADMIN;
     const d = parsed.data;
     let clinicianId = uid;
-    if (role === UserRole.ADMIN) {
+    if (isAdmin) {
       if (!d.clinicianId?.trim()) {
         res.status(400).json({ error: "Choose a clinician" });
         return;
@@ -265,17 +266,18 @@ export function createClinicianSlotsRouter(cfg: AppConfig): Router {
     res.status(201).json({ slot });
   });
 
-  r.post("/bulk", requireAuth, requireRoles(UserRole.CLINICIAN, UserRole.ADMIN), async (req: AuthedRequest, res) => {
+  r.post("/bulk", requireDbRoles(UserRole.CLINICIAN, UserRole.ADMIN), async (req: AuthedRequest, res) => {
     const parsed = bulkSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: "Invalid input" });
       return;
     }
-    const role = req.userRole!;
+    const dbUser = req.dbUser!;
     const uid = req.userId!;
+    const isAdmin = dbUser.role === UserRole.ADMIN;
     const d = parsed.data;
     let clinicianId = uid;
-    if (role === UserRole.ADMIN) {
+    if (isAdmin) {
       if (!d.clinicianId?.trim()) {
         res.status(400).json({ error: "Choose a clinician" });
         return;
@@ -400,7 +402,7 @@ export function createClinicianSlotsRouter(cfg: AppConfig): Router {
     res.status(201).json({ appointment: ap });
   });
 
-  r.delete("/:id", requireAuth, requireRoles(UserRole.CLINICIAN, UserRole.ADMIN), async (req: AuthedRequest, res) => {
+  r.delete("/:id", requireDbRoles(UserRole.CLINICIAN, UserRole.ADMIN), async (req: AuthedRequest, res) => {
     const slotId = typeof req.params.id === "string" ? req.params.id : req.params.id?.[0];
     if (!slotId) {
       res.status(400).json({ error: "Invalid id" });
@@ -411,8 +413,10 @@ export function createClinicianSlotsRouter(cfg: AppConfig): Router {
       res.status(404).json({ error: "Not found" });
       return;
     }
-    const role = req.userRole!;
-    if (role === UserRole.CLINICIAN && slot.clinicianId !== req.userId) {
+    const dbUser = req.dbUser!;
+    const isAdmin = dbUser.role === UserRole.ADMIN;
+    const isClinician = dbUser.role === UserRole.CLINICIAN || dbUser.secondaryRole === UserRole.CLINICIAN;
+    if (!isAdmin && (!isClinician || slot.clinicianId !== req.userId)) {
       res.status(403).json({ error: "Forbidden" });
       return;
     }

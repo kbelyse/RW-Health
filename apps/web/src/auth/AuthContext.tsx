@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "@/api/client";
 export type Role = "PATIENT" | "CLINICIAN" | "LAB" | "ADMIN";
 export interface User {
@@ -32,6 +33,7 @@ const Ctx = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: {
     children: ReactNode;
 }) {
+    const navigate = useNavigate();
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const authEpochRef = useRef(0);
@@ -64,6 +66,15 @@ export function AuthProvider({ children }: {
     useEffect(() => {
         void refresh().finally(() => setLoading(false));
     }, [refresh]);
+    useEffect(() => {
+        function onSessionLost() {
+            authEpochRef.current++;
+            setUser(null);
+            navigate("/login", { replace: true });
+        }
+        window.addEventListener("rw-health:session-unauthorized", onSessionLost);
+        return () => window.removeEventListener("rw-health:session-unauthorized", onSessionLost);
+    }, [navigate]);
     const login = useCallback(async (email: string, password: string) => {
         const r = await api<{
             user: User;
