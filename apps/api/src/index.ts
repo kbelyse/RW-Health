@@ -34,6 +34,10 @@ app.use(cors({
 }));
 app.use(express.json({ limit: "512kb" }));
 app.use(cookieParser());
+app.get("/api/health", (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.status(200).json({ status: "ok" });
+});
 app.use(authMiddleware(cfg));
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -42,9 +46,6 @@ const limiter = rateLimit({
     legacyHeaders: false,
 });
 app.use("/api", limiter);
-app.get("/api/health", (_req, res) => {
-    res.json({ status: "ok" });
-});
 app.use("/api/auth", (req, res, next) => {
     res.setHeader("Cache-Control", "private, no-store, no-cache, must-revalidate");
     next();

@@ -6,4 +6,5 @@ services:
     runtime: node
     buildCommand: npm run build:render
     startCommand: npm run start:prod
-    # Root directory = repo root (default). Do not set to apps/api unless you change paths.
+    healthCheckPath: /api/health
+    # Root directory = repo root (default). In dashboard: set Health Check Path to /api/health if not using Blueprint.
