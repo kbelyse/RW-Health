@@ -7,7 +7,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "start:prod": "prisma db push && NODE_ENV=production WEB_DIST=../web/dist node dist/index.js",
+    "start:prod": "prisma db push --skip-generate && NODE_ENV=production WEB_DIST=../web/dist node dist/index.js",
     "postinstall": "prisma generate",
     "db:push": "cross-env DATABASE_URL=file:./dev.db prisma db push",
     "db:seed": "cross-env DATABASE_URL=file:./dev.db tsx prisma/seed.ts",
