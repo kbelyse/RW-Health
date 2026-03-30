@@ -28,15 +28,6 @@ export default defineConfig({
                             expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 30 },
                         },
                     },
-                    {
-                        urlPattern: ({ url }) => url.pathname.startsWith("/api/"),
-                        handler: "NetworkFirst",
-                        options: {
-                            cacheName: "api-cache",
-                            networkTimeoutSeconds: 8,
-                            expiration: { maxEntries: 50, maxAgeSeconds: 120 },
-                        },
-                    },
                 ],
             },
         }),

@@ -35,9 +35,15 @@ export function AuthProvider({ children }: {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const refresh = useCallback(async () => {
-        const r = await api<{
+        let r = await api<{
             user: User | null;
         }>("/api/auth/me");
+        if (!r.ok && (r.status === 0 || r.status === 502 || r.status === 503 || r.status === 504)) {
+            await new Promise((resolve) => setTimeout(resolve, 600));
+            r = await api<{
+                user: User | null;
+            }>("/api/auth/me");
+        }
         if (!r.ok) {
             setUser(null);
             return;
