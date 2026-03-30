@@ -6,8 +6,10 @@
     "setup": "node scripts/setup-env.mjs",
     "dev": "concurrently -n api,web -c blue,green \"npm run dev -w @rw-health/api\" \"npm run dev -w @rw-health/web\"",
     "build": "npm run build -w @rw-health/shared && npm run build -w @rw-health/api && npm run build -w @rw-health/web",
+    "build:render": "npm install --include=dev && npm run build",
     "db:push": "npm run db:push -w @rw-health/api",
-    "db:seed": "npm run db:seed -w @rw-health/api"
+    "db:seed": "npm run db:seed -w @rw-health/api",
+    "start:prod": "npm run start:prod -w @rw-health/api"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
