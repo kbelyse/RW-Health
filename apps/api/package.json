@@ -7,7 +7,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "start:prod": "NODE_ENV=production WEB_DIST=../web/dist node dist/index.js",
+    "start:prod": "prisma db push && NODE_ENV=production WEB_DIST=../web/dist node dist/index.js",
     "postinstall": "prisma generate",
     "db:push": "cross-env DATABASE_URL=file:./dev.db prisma db push",
     "db:seed": "cross-env DATABASE_URL=file:./dev.db tsx prisma/seed.ts",
@@ -29,6 +29,7 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.1",
     "nodemailer": "^8.0.4",
+    "prisma": "^6.3.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {
@@ -40,7 +41,6 @@
     "@types/node": "^22.10.5",
     "@types/nodemailer": "^6.4.17",
     "cross-env": "^7.0.3",
-    "prisma": "^6.3.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
