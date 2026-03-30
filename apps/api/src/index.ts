@@ -45,6 +45,10 @@ app.use("/api", limiter);
 app.get("/api/health", (_req, res) => {
     res.json({ status: "ok" });
 });
+app.use("/api/auth", (req, res, next) => {
+    res.setHeader("Cache-Control", "private, no-store, no-cache, must-revalidate");
+    next();
+});
 app.use("/api/auth", createAuthRouter(cfg));
 app.use("/api/records", createRecordsRouter(cfg));
 app.use("/api/labs", createLabsRouter(cfg));
