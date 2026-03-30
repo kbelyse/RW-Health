@@ -69,3 +69,5 @@ Optional: to run a **production build** on your machine after `npm run build`, u
 | Root directory | *(monorepo root)* |
 | Build command | `npm run build:render` |
 | Start command | `npm run start:prod` |
+
+**Production SQLite:** On hosts with an **ephemeral filesystem** (e.g. Render free web services), the database file can be **wiped on deploy or when the instance restarts**—accounts and data disappear even though the app “worked” earlier. For durable data, use a **managed database** (e.g. Render Postgres) and point `DATABASE_URL` at it, or attach **persistent disk** if you stay on SQLite.

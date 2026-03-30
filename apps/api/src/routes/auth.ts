@@ -9,10 +9,15 @@ import type { AppConfig } from "../config.js";
 import { cookieName, getTokenFromRequest, requireAuth, type AuthedRequest } from "../middleware/auth.js";
 import { sendWelcomeEmail, sendPasswordResetEmail } from "../lib/mail.js";
 import { audit } from "../lib/audit.js";
+
+const emailField = z
+    .string()
+    .transform((s) => s.trim().toLowerCase())
+    .pipe(z.string().email().max(320));
 const registerSchema = z.object({
-    email: z.string().email().max(320),
+    email: emailField,
     password: z.string().min(10).max(128),
-    fullName: z.string().min(2).max(120),
+    fullName: z.string().transform((s) => s.trim()).pipe(z.string().min(2).max(120)),
     role: z.nativeEnum(UserRole).optional(),
     secondaryRole: z.nativeEnum(UserRole).optional(),
 });
@@ -46,14 +51,14 @@ function normalizeUserResponse(user: {
     };
 }
 const loginSchema = z.object({
-    email: z.string().email(),
+    email: emailField,
     password: z.string().min(1),
 });
 const forgotSchema = z.object({
-    email: z.string().email(),
+    email: emailField,
 });
 const resetSchema = z.object({
-    email: z.string().email(),
+    email: emailField,
     code: z.string().min(6).max(64),
     newPassword: z.string().min(10).max(128),
 });
@@ -102,7 +107,7 @@ export function createAuthRouter(cfg: AppConfig): Router {
                 return;
             }
         }
-        const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+        const existing = await prisma.user.findUnique({ where: { email } });
         if (existing) {
             res.status(409).json({ error: "Email already registered" });
             return;
@@ -110,7 +115,7 @@ export function createAuthRouter(cfg: AppConfig): Router {
         const passwordHash = await bcrypt.hash(password, 12);
         const user = await prisma.user.create({
             data: {
-                email: email.toLowerCase(),
+                email,
                 passwordHash,
                 fullName,
                 role,
@@ -142,13 +147,13 @@ export function createAuthRouter(cfg: AppConfig): Router {
             res.status(400).json({ error: "Invalid input" });
             return;
         }
-        const email = parsed.data.email.toLowerCase();
+        const { email, password } = parsed.data;
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
             res.status(401).json({ error: "Invalid credentials" });
             return;
         }
-        const ok = await bcrypt.compare(parsed.data.password, user.passwordHash);
+        const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) {
             res.status(401).json({ error: "Invalid credentials" });
             return;
@@ -270,7 +275,7 @@ export function createAuthRouter(cfg: AppConfig): Router {
             res.status(400).json({ error: "Invalid input" });
             return;
         }
-        const email = parsed.data.email.toLowerCase();
+        const { email } = parsed.data;
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
             res.json({ ok: true });
@@ -297,7 +302,7 @@ export function createAuthRouter(cfg: AppConfig): Router {
             res.status(400).json({ error: "Invalid input" });
             return;
         }
-        const email = parsed.data.email.toLowerCase();
+        const { email } = parsed.data;
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user?.resetToken || !user.resetExpires) {
             res.status(400).json({ error: "Invalid or expired code" });

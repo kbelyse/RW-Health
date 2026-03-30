@@ -7,7 +7,13 @@ const envSchema = z.object({
     COOKIE_SECURE: z
         .string()
         .optional()
-        .transform((v) => v === "true" || v === "1"),
+        .transform((v) => {
+            if (v === "true" || v === "1")
+                return true;
+            if (v === "false" || v === "0")
+                return false;
+            return process.env.NODE_ENV === "production";
+        }),
     CORS_ORIGIN: z.string().default("http://localhost:5173"),
     SMTP_HOST: z.string().optional(),
     SMTP_PORT: z.coerce.number().optional(),
