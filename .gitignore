@@ -11,4 +11,5 @@ coverage
 .turbo
 *.log
 *.tsbuildinfo
+apps/api/uploads/
 apps/api/prisma/dev.db*

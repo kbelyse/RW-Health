@@ -10,6 +10,8 @@ type LabRow = {
   unit: string;
   referenceRange: string | null;
   reportedAt: string;
+  reportOriginalName?: string | null;
+  reportStoredName?: string | null;
 };
 
 export function DashboardLabsPage() {
@@ -24,7 +26,7 @@ export function DashboardLabsPage() {
         return;
       }
       if (!("data" in r) || !r.data) {
-        setErr("You are offline — connect to load lab results.");
+        setErr("You are offline. Connect to load lab results.");
         return;
       }
       setLabs(r.data.results);
@@ -33,17 +35,21 @@ export function DashboardLabsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-bold text-slate-900">Lab results</h1>
-      <p className="mt-1 text-sm text-slate-600">
-        Results are entered by accredited lab accounts and attached to your passport—you do not upload
-        PDFs here.
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-600">Labs</p>
+      <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-slate-900">Lab results</h1>
+      <p className="mt-3 max-w-2xl text-sm text-slate-600">
+        Values from your lab account. Attachments open in a new tab when present.
       </p>
       {err && (
-        <p className="mt-4 rounded-sm border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
           {err}
         </p>
       )}
-      <DashCard title="Structured results" icon={<FlaskConical className="h-4 w-4 text-brand-600" />} className="mt-6">
+      <DashCard
+        title="Structured results"
+        icon={<FlaskConical className="h-5 w-5 text-brand-600" />}
+        className="mt-10"
+      >
         <ul className="space-y-3">
           {labs.map((l) => (
             <li key={l.id} className="text-sm">
@@ -54,6 +60,16 @@ export function DashboardLabsPage() {
               </span>
               {l.referenceRange && (
                 <span className="text-slate-500"> · Ref: {l.referenceRange}</span>
+              )}
+              {l.reportStoredName && (
+                <a
+                  href={`/api/labs/${encodeURIComponent(l.id)}/report`}
+                  className="ml-2 text-xs font-semibold text-brand-600 underline"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Report
+                </a>
               )}
               <p className="text-xs text-slate-500">{new Date(l.reportedAt).toLocaleString()}</p>
             </li>

@@ -2,9 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
 import { AuthLayout } from "@/components/auth/AuthLayout";
-
-const inputClass =
-  "w-full rounded-sm border border-slate-200 bg-slate-50/80 px-4 py-4 text-base text-slate-900 outline-none transition focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/20";
+import { PasswordRevealField } from "@/components/auth/PasswordRevealField";
 
 export function Login() {
   const { login } = useAuth();
@@ -29,14 +27,22 @@ export function Login() {
 
   return (
     <AuthLayout
-      heroTitle="Sign in with confidence"
-      heroSubtitle="Access your passport dashboard with the same secure, role-aware session used across the platform."
+      heroTitle="Welcome to RW-Health"
+      heroSubtitle="Secure access to your digital health passport: one workspace for patients, clinicians, labs, and admins."
     >
-      <h1 className="font-display text-2xl font-bold text-slate-900 md:text-3xl">Welcome back</h1>
-      <p className="mt-2 text-slate-600">Enter your credentials to continue.</p>
-      <form onSubmit={onSubmit} className="mt-10 space-y-6">
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-slate-400">Account</p>
+        <h1 className="mt-2 font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-[1.75rem]">
+          Login
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-slate-500">
+          Enter your credentials to open your workspace.
+        </p>
+      </div>
+
+      <form onSubmit={onSubmit} className="mt-9 space-y-5">
         <div>
-          <label className="block text-sm font-bold uppercase tracking-wide text-slate-600" htmlFor="email">
+          <label className="auth-label" htmlFor="email">
             Email
           </label>
           <input
@@ -46,46 +52,52 @@ export function Login() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className={`${inputClass} mt-2`}
+            className="auth-input"
+            placeholder="you@example.com"
           />
         </div>
         <div>
-          <label
-            className="block text-sm font-bold uppercase tracking-wide text-slate-600"
-            htmlFor="password"
-          >
-            Password
-          </label>
-          <input
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <label className="auth-label mb-0" htmlFor="password">
+              Password
+            </label>
+            <Link
+              to="/forgot-password"
+              className="text-[13px] font-semibold text-[#0059B3] underline-offset-2 hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
+          <PasswordRevealField
             id="password"
-            type="password"
-            autoComplete="current-password"
-            required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className={`${inputClass} mt-2`}
+            autoComplete="current-password"
+            placeholder="••••••••"
+            required
           />
         </div>
-        {err && <p className="rounded-sm border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{err}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-sm bg-brand-600 py-4 text-base font-bold text-white transition hover:bg-brand-700 disabled:opacity-60"
-        >
-          {loading ? "Signing in…" : "Sign in"}
+        {err && (
+          <div
+            role="alert"
+            className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+          >
+            {err}
+          </div>
+        )}
+        <button type="submit" disabled={loading} className="auth-btn-primary !mt-2">
+          {loading ? "Signing in…" : "Login"}
         </button>
       </form>
-      <p className="mt-8 text-center text-sm text-slate-600">
-        No account?{" "}
-        <Link to="/register" className="font-bold text-brand-700 hover:underline">
-          Create one
-        </Link>
-      </p>
-      <p className="mt-4 text-center text-sm">
-        <Link to="/forgot-password" className="font-medium text-slate-500 hover:text-brand-700">
-          Forgot password?
-        </Link>
-      </p>
+
+      <div className="mt-9 border-t border-slate-100 pt-8">
+        <p className="text-center text-sm text-slate-600">
+          Don&apos;t have an account?{" "}
+          <Link to="/register" className="font-semibold text-[#0059B3] underline-offset-2 hover:underline">
+            Register
+          </Link>
+        </p>
+      </div>
     </AuthLayout>
   );
 }

@@ -22,7 +22,7 @@ type Props = {
 export function DashboardShell({ role, title, subtitle, stats, children }: Props) {
   return (
     <div className="min-h-[calc(100vh-8rem)]">
-      <div className="border-b border-slate-200/90 bg-gradient-to-r from-slate-50/90 to-white">
+      <div className="border-b border-[#0059B3]/20 bg-white">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 md:flex-row md:items-end md:justify-between">
           <motion.div
             initial={{ opacity: 0, y: 6 }}
@@ -30,12 +30,12 @@ export function DashboardShell({ role, title, subtitle, stats, children }: Props
             transition={{ duration: 0.35 }}
           >
             <div className="flex flex-wrap items-center gap-3">
-              <span className="rounded-full border border-brand-200/80 bg-brand-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-800">
+              <span className="rounded-full border border-[#0059B3]/25 bg-bk-light px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#0059B3]">
                 {roleLabel[role]}
               </span>
               <Link
                 to="/"
-                className="text-xs font-medium text-slate-500 transition hover:text-brand-700"
+                className="text-xs font-medium text-slate-500 transition hover:text-[#0059B3]"
               >
                 ← Platform home
               </Link>
@@ -71,13 +71,13 @@ export function DashCard({
 }) {
   return (
     <section
-      className={`rounded-xl border border-slate-200/90 bg-white ${className}`}
+      className={`overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-md shadow-slate-900/[0.06] ring-1 ring-slate-100/80 ${className}`}
     >
-      <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-3.5">
+      <div className="flex items-center gap-3 border-b border-slate-100/90 bg-slate-50/50 px-6 py-4">
         {icon}
-        <h2 className="font-display text-sm font-semibold text-slate-900">{title}</h2>
+        <h2 className="font-display text-base font-semibold tracking-tight text-slate-900">{title}</h2>
       </div>
-      <div className="p-5">{children}</div>
+      <div className="p-6 md:p-8">{children}</div>
     </section>
   );
 }

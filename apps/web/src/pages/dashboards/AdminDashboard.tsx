@@ -31,9 +31,10 @@ export function AdminDashboard() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-bold text-slate-900">Operations</h1>
-        <p className="mt-1 text-sm text-slate-600">
+      <div className="mb-10">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-600">Administration</p>
+        <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-slate-900">Operations</h1>
+        <p className="mt-3 max-w-2xl text-base leading-relaxed text-slate-600">
           Utilization, lab throughput, and audit signals.{" "}
           {stats && (
             <span className="text-slate-500">
@@ -43,10 +44,10 @@ export function AdminDashboard() {
           )}
         </p>
       </div>
-      {err && <p className="mb-6 text-sm text-red-600">{err}</p>}
+      {err && <p className="mb-8 text-sm text-red-600">{err}</p>}
       {stats && (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <DashCard title="Users by role" icon={<BarChart3 className="h-4 w-4 text-brand-600" />}>
+        <div className="grid gap-8 lg:grid-cols-2">
+          <DashCard title="Users by role" icon={<BarChart3 className="h-5 w-5 text-brand-600" />}>
             <ul className="space-y-2 text-sm">
               {stats.usersByRole.map((u) => (
                 <li

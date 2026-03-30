@@ -59,7 +59,7 @@ const items = [
   {
     Icon: IconNetwork,
     title: "Multi-site graph",
-    desc: "Patients, facilities, and labs linked by search—not silos.",
+    desc: "Patients, facilities, and labs linked by search, not silos.",
   },
   {
     Icon: IconShield,

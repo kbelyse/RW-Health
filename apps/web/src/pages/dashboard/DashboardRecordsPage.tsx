@@ -25,7 +25,7 @@ export function DashboardRecordsPage() {
         return;
       }
       if (!("data" in r) || !r.data) {
-        setErr("You are offline — connect to load records.");
+        setErr("You are offline. Connect to load records.");
         return;
       }
       setRecords(r.data.records);
@@ -34,16 +34,19 @@ export function DashboardRecordsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-bold text-slate-900">Medical records</h1>
-      <p className="mt-1 text-sm text-slate-600">
-        Visit summaries added by clinicians appear here with facility and date.
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-600">Records</p>
+      <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-slate-900">
+        Medical records
+      </h1>
+      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">
+        Visit notes from your clinicians (not lab tests — those are under Lab results).
       </p>
       {err && (
-        <p className="mt-4 rounded-sm border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
           {err}
         </p>
       )}
-      <DashCard title="Encounters" icon={<FileText className="h-4 w-4 text-brand-600" />} className="mt-6">
+      <DashCard title="Encounters" icon={<FileText className="h-5 w-5 text-brand-600" />} className="mt-10">
         <ul className="space-y-3">
           {records.map((rec) => (
             <motion.li

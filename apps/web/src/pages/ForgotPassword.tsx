@@ -3,9 +3,6 @@ import { Link } from "react-router-dom";
 import { api } from "@/api/client";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 
-const inputClass =
-  "w-full rounded-sm border border-slate-200 bg-slate-50/80 px-4 py-4 text-base text-slate-900 outline-none transition focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/20";
-
 export function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -52,19 +49,25 @@ export function ForgotPassword() {
 
   return (
     <AuthLayout
-      heroTitle="Recover access"
-      heroSubtitle="We will email a reset code when SMTP is configured. In development, check the API console for the code."
+      heroTitle="Welcome to RW-Health"
+      heroSubtitle="We’ll email a reset code when SMTP is set; otherwise check the API terminal in dev."
     >
-      <h1 className="font-display text-2xl font-bold text-slate-900 md:text-3xl">Password recovery</h1>
-      <p className="mt-2 text-slate-600">
-        {step === "req"
-          ? "Enter the email you used to register."
-          : "Enter the code and choose a new password."}
-      </p>
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-slate-400">Recovery</p>
+        <h1 className="mt-2 font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-[1.75rem]">
+          Password recovery
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-slate-500">
+          {step === "req"
+            ? "Enter the email you used to register."
+            : "Enter the code and choose a new password."}
+        </p>
+      </div>
+
       {step === "req" && (
-        <form onSubmit={requestReset} className="mt-10 space-y-6">
+        <form onSubmit={requestReset} className="mt-9 space-y-5">
           <div>
-            <label className="block text-sm font-bold uppercase tracking-wide text-slate-600" htmlFor="email">
+            <label className="auth-label" htmlFor="email">
               Email
             </label>
             <input
@@ -73,24 +76,26 @@ export function ForgotPassword() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={`${inputClass} mt-2`}
+              className="auth-input"
+              placeholder="you@example.com"
             />
           </div>
-          {err && <p className="rounded-sm border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{err}</p>}
-          {msg && <p className="rounded-sm border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{msg}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-sm bg-brand-600 py-4 text-base font-bold text-white transition hover:bg-brand-700 disabled:opacity-60"
-          >
+          {err && (
+            <p className="rounded-2xl border border-red-200/90 bg-red-50 px-5 py-4 text-sm text-red-900">{err}</p>
+          )}
+          {msg && (
+            <p className="rounded-2xl border border-emerald-200/90 bg-emerald-50 px-5 py-4 text-sm text-emerald-900">{msg}</p>
+          )}
+          <button type="submit" disabled={loading} className="auth-btn-primary !mt-4">
             {loading ? "Sending…" : "Send reset code"}
           </button>
         </form>
       )}
+
       {step === "reset" && (
-        <form onSubmit={reset} className="mt-10 space-y-6">
+        <form onSubmit={reset} className="mt-9 space-y-5">
           <div>
-            <label className="block text-sm font-bold uppercase tracking-wide text-slate-600" htmlFor="code">
+            <label className="auth-label" htmlFor="code">
               Reset code
             </label>
             <input
@@ -98,11 +103,11 @@ export function ForgotPassword() {
               required
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className={`${inputClass} mt-2 font-mono`}
+              className="auth-input font-mono text-lg tracking-wider"
             />
           </div>
           <div>
-            <label className="block text-sm font-bold uppercase tracking-wide text-slate-600" htmlFor="np">
+            <label className="auth-label" htmlFor="np">
               New password
             </label>
             <input
@@ -112,25 +117,29 @@ export function ForgotPassword() {
               required
               value={np}
               onChange={(e) => setNp(e.target.value)}
-              className={`${inputClass} mt-2`}
+              className="auth-input"
+              autoComplete="new-password"
             />
           </div>
-          {err && <p className="rounded-sm border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{err}</p>}
-          {msg && <p className="rounded-sm border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{msg}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-sm bg-brand-600 py-4 text-base font-bold text-white transition hover:bg-brand-700 disabled:opacity-60"
-          >
+          {err && (
+            <p className="rounded-2xl border border-red-200/90 bg-red-50 px-5 py-4 text-sm text-red-900">{err}</p>
+          )}
+          {msg && (
+            <p className="rounded-2xl border border-emerald-200/90 bg-emerald-50 px-5 py-4 text-sm text-emerald-900">{msg}</p>
+          )}
+          <button type="submit" disabled={loading} className="auth-btn-primary !mt-4">
             {loading ? "Updating…" : "Update password"}
           </button>
         </form>
       )}
-      <p className="mt-8 text-center text-sm">
-        <Link to="/login" className="font-bold text-brand-700 hover:underline">
-          Back to sign in
-        </Link>
-      </p>
+
+      <div className="mt-9 border-t border-slate-100 pt-8">
+        <p className="text-center text-sm">
+          <Link to="/login" className="font-semibold text-[#0059B3] underline-offset-2 hover:underline">
+            Back to sign in
+          </Link>
+        </p>
+      </div>
     </AuthLayout>
   );
 }
