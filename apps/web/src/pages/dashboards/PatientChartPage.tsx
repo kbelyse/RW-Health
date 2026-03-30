@@ -4,6 +4,7 @@ import { Calendar, FlaskConical, Stethoscope, X } from "lucide-react";
 import { api } from "@/api/client";
 import { DashCard } from "@/components/dashboard/DashboardShell";
 import type { AppointmentRow } from "@/pages/dashboard/DashboardAppointmentsPage";
+import { useAuth } from "@/auth/AuthContext";
 
 const PREVIEW = 40;
 
@@ -13,6 +14,8 @@ type RecordRow = {
   summary: string;
   facilityName: string;
   visitDate: string;
+  publishedAt?: string | null;
+  authorId?: string | null;
   author?: { fullName: string } | null;
 };
 
@@ -44,6 +47,7 @@ function AppointmentStatusRead({ status }: { status: string }) {
 }
 
 export function PatientChartPage() {
+  const { user } = useAuth();
   const { patientId } = useParams();
   const [header, setHeader] = useState<{ id: string; fullName: string; email: string } | null>(null);
   const [loadErr, setLoadErr] = useState<string | null>(null);
@@ -127,6 +131,15 @@ export function PatientChartPage() {
     [appointments, expandAll]
   );
 
+  const canAddStandaloneVisitNote = useMemo(() => {
+    if (!user) return false;
+    if (user.role === "ADMIN") return true;
+    if (user.role !== "CLINICIAN") return false;
+    return appointments.some(
+      (a) => new Date(a.scheduledAt) <= new Date() && a.clinician?.id === user.id
+    );
+  }, [user, appointments]);
+
   const hasMore =
     records.length > PREVIEW || labs.length > PREVIEW || appointments.length > PREVIEW;
 
@@ -173,6 +186,26 @@ export function PatientChartPage() {
     if (list.ok && "data" in list && list.data) setRecords(list.data.records);
   }
 
+  async function publishHealthRecord(recordId: string) {
+    setErr(null);
+    setMsg(null);
+    const r = await api<{ record: RecordRow }>(
+      `/api/records/${encodeURIComponent(recordId)}/publish`,
+      { method: "POST", body: JSON.stringify({}) }
+    );
+    if (!r.ok) {
+      setErr(r.error ?? "Could not publish");
+      return;
+    }
+    setMsg("Visit note published — it is now locked and visible to the care team as final.");
+    if (patientId) {
+      const list = await api<{ records: RecordRow[] }>(
+        `/api/records?patientId=${encodeURIComponent(patientId)}`
+      );
+      if (list.ok && "data" in list && list.data) setRecords(list.data.records);
+    }
+  }
+
   async function saveAppointmentNotes(appointmentId: string) {
     if (!patientId) return;
     setErr(null);
@@ -192,6 +225,39 @@ export function PatientChartPage() {
       return;
     }
     setApptNoteMsg("Visit notes saved.");
+    const list = await api<{ appointments: AppointmentRow[] }>(
+      `/api/appointments?patientId=${encodeURIComponent(patientId)}`,
+    );
+    if (list.ok && "data" in list && list.data) setAppointments(list.data.appointments);
+  }
+
+  async function publishAppointmentNotes(appointmentId: string) {
+    if (!patientId) return;
+    setErr(null);
+    setApptNoteMsg(null);
+    setApptNoteSaving(appointmentId);
+    const rSave = await api<{ appointment: AppointmentRow }>(
+      `/api/appointments/${encodeURIComponent(appointmentId)}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ notes: apptNoteDraft[appointmentId] ?? "" }),
+      }
+    );
+    if (!rSave.ok) {
+      setApptNoteSaving(null);
+      setErr(rSave.error ?? "Could not save");
+      return;
+    }
+    const rPub = await api<{ appointment: AppointmentRow }>(
+      `/api/appointments/${encodeURIComponent(appointmentId)}/publish-notes`,
+      { method: "POST", body: JSON.stringify({}) }
+    );
+    setApptNoteSaving(null);
+    if (!rPub.ok) {
+      setErr(rPub.error ?? "Could not publish");
+      return;
+    }
+    setApptNoteMsg("Visit notes published and locked.");
     const list = await api<{ appointments: AppointmentRow[] }>(
       `/api/appointments?patientId=${encodeURIComponent(patientId)}`,
     );
@@ -238,7 +304,7 @@ export function PatientChartPage() {
           >
             ← All patients
           </Link>
-          {!showAddVisitNote && (
+          {!showAddVisitNote && canAddStandaloneVisitNote && (
             <button
               type="button"
               onClick={() => {
@@ -253,9 +319,17 @@ export function PatientChartPage() {
         </div>
       </div>
 
+      {!canAddStandaloneVisitNote && user?.role === "CLINICIAN" && (
+        <p className="mt-4 max-w-2xl rounded-lg border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-950">
+          <strong>Add visit note</strong> appears after you have a <strong>scheduled visit</strong> with this patient
+          whose date and time have passed. Until then, use the appointment list below once the visit time arrives.
+        </p>
+      )}
+
       <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-600">
-        Visit notes (history), lab results, and scheduled visits. Use <strong>Add visit note</strong> after a
-        consultation, or add notes on a scheduled appointment below.
+        <strong>Medical records</strong> are clinical visit summaries written by clinicians (diagnoses, plan,
+        narrative). <strong>Lab results</strong> are structured test rows and file reports uploaded by the laboratory.
+        Appointment blocks tie notes to a specific booked visit — publish when final to lock them.
       </p>
 
       {msg && !showAddVisitNote && (
@@ -364,24 +438,60 @@ export function PatientChartPage() {
         </div>
       )}
 
-      <DashCard title="Visit notes (history)" icon={<Stethoscope className="h-5 w-5 text-brand-600" />} className="mt-8">
+      <DashCard title="Medical records (visit notes)" icon={<Stethoscope className="h-5 w-5 text-brand-600" />} className="mt-8">
+        <p className="mb-4 text-xs text-slate-600">
+          Chronological notes from clinics — not the same as lab rows below. Drafts can be edited by the author
+          until you <strong>publish</strong>; then everyone sees them read-only.
+        </p>
         <ul className="space-y-3">
-          {recShow.map((rec) => (
-            <li key={rec.id} className="rounded-lg border border-slate-100 bg-slate-50/80 p-3 text-sm">
-              <p className="font-medium text-slate-900">{rec.title}</p>
-              <p className="text-slate-600">{rec.summary}</p>
-              <p className="mt-1 text-xs text-slate-500">
-                {rec.facilityName} · {new Date(rec.visitDate).toLocaleString()}
-                {rec.author?.fullName && ` · ${rec.author.fullName}`}
-              </p>
-            </li>
-          ))}
+          {recShow.map((rec) => {
+            const published = !!rec.publishedAt;
+            const isAuthor = user?.id && rec.authorId === user.id;
+            const canPublish =
+              user && !published && (isAuthor || user.role === "ADMIN");
+            return (
+              <li key={rec.id} className="rounded-lg border border-slate-100 bg-slate-50/80 p-3 text-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium text-slate-900">{rec.title}</p>
+                  {published ? (
+                    <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-700">
+                      Published
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-900">
+                      Draft
+                    </span>
+                  )}
+                </div>
+                <p className="text-slate-600">{rec.summary}</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {rec.facilityName} · {new Date(rec.visitDate).toLocaleString()}
+                  {rec.author?.fullName && ` · ${rec.author.fullName}`}
+                </p>
+                {canPublish && (
+                  <button
+                    type="button"
+                    onClick={() => void publishHealthRecord(rec.id)}
+                    className="mt-2 rounded-md bg-brand-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-700"
+                  >
+                    Publish & lock
+                  </button>
+                )}
+                {!published && !isAuthor && user?.role !== "ADMIN" && rec.author?.fullName && (
+                  <p className="mt-1 text-xs text-slate-500">View only — only the author can edit or publish.</p>
+                )}
+              </li>
+            );
+          })}
           {records.length === 0 && <li className="text-sm text-slate-500">No visit notes yet.</li>}
         </ul>
       </DashCard>
 
       <DashCard title="Lab results" icon={<FlaskConical className="h-5 w-5 text-brand-600" />} className="mt-8">
-        <p className="mb-4 text-xs text-slate-600">Structured tests from labs (read-only).</p>
+        <p className="mb-4 text-xs text-slate-600">
+          Quantitative tests from the lab (code, value, unit). For narrative care, use medical records above — not
+          this list.
+        </p>
         <ul className="space-y-3">
           {labShow.map((l) => (
             <li key={l.id} className="rounded-lg border border-slate-100 px-3 py-2 text-sm">
@@ -403,58 +513,99 @@ export function PatientChartPage() {
 
       <DashCard title="Appointments" icon={<Calendar className="h-5 w-5 text-brand-600" />} className="mt-8">
         <p className="mb-4 text-xs text-slate-600">
-          Scheduled visits. Add or update <strong>visit notes</strong> after you see the patient (saved on the
-          appointment).
+          Notes here belong to the booked visit. They unlock after the <strong>scheduled time</strong>. Only the
+          assigned clinician (or an admin) can edit; <strong>Publish & lock</strong> freezes them for everyone.
         </p>
         {apptNoteMsg && <p className="mb-3 text-sm text-emerald-800">{apptNoteMsg}</p>}
         <ul className="space-y-4">
-          {aptShow.map((a) => (
-            <li key={a.id} className="rounded-lg border border-slate-100 px-3 py-3 text-sm">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <p className="font-semibold text-slate-900">{a.title}</p>
-                  <p className="text-slate-600">{a.facilityName}</p>
+          {aptShow.map((a) => {
+            const visitReached = new Date(a.scheduledAt) <= new Date();
+            const notesLocked = !!a.notesPublishedAt;
+            const assignedId = a.clinician?.id;
+            const canEditApptNotes =
+              user &&
+              !notesLocked &&
+              visitReached &&
+              (user.role === "ADMIN" || user.id === assignedId);
+            return (
+              <li key={a.id} className="rounded-lg border border-slate-100 px-3 py-3 text-sm">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="font-semibold text-slate-900">{a.title}</p>
+                    <p className="text-slate-600">{a.facilityName}</p>
+                  </div>
+                  <AppointmentStatusRead status={a.status} />
                 </div>
-                <AppointmentStatusRead status={a.status} />
-              </div>
-              <p className="mt-2 text-xs text-slate-500">{new Date(a.scheduledAt).toLocaleString()}</p>
-              <p className="text-xs text-slate-600">Dr {a.clinician?.fullName ?? "—"}</p>
-              <label className="mt-3 block text-xs font-medium text-slate-600" htmlFor={`notes-${a.id}`}>
-                Visit notes
-              </label>
-              <textarea
-                id={`notes-${a.id}`}
-                rows={3}
-                value={apptNoteDraft[a.id] ?? ""}
-                onChange={(e) =>
-                  setApptNoteDraft((prev) => ({ ...prev, [a.id]: e.target.value }))
-                }
-                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
-                placeholder="Clinical notes for this visit…"
-              />
-              <button
-                type="button"
-                disabled={apptNoteSaving === a.id}
-                onClick={() => void saveAppointmentNotes(a.id)}
-                className="mt-2 rounded-md bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-700 disabled:opacity-50"
-              >
-                {apptNoteSaving === a.id ? "Saving…" : "Save visit notes"}
-              </button>
-            </li>
-          ))}
+                <p className="mt-2 text-xs text-slate-500">{new Date(a.scheduledAt).toLocaleString()}</p>
+                <p className="text-xs text-slate-600">Dr {a.clinician?.fullName ?? "—"}</p>
+                {notesLocked && (
+                  <p className="mt-2 rounded-md bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600">
+                    Visit notes published — read-only.
+                  </p>
+                )}
+                {!visitReached && (user?.role === "ADMIN" || user?.id === assignedId) && (
+                  <p className="mt-2 text-[11px] text-amber-800">Notes unlock after this visit time.</p>
+                )}
+                {visitReached && !notesLocked && assignedId && user?.id !== assignedId && user?.role !== "ADMIN" && (
+                  <p className="mt-2 text-[11px] text-slate-600">View only — assigned clinician may edit.</p>
+                )}
+                <label className="mt-3 block text-xs font-medium text-slate-600" htmlFor={`notes-${a.id}`}>
+                  Visit notes (this appointment)
+                </label>
+                {canEditApptNotes ? (
+                  <textarea
+                    id={`notes-${a.id}`}
+                    rows={3}
+                    value={apptNoteDraft[a.id] ?? ""}
+                    onChange={(e) =>
+                      setApptNoteDraft((prev) => ({ ...prev, [a.id]: e.target.value }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20"
+                    placeholder="Draft notes — save, then publish when final…"
+                  />
+                ) : (
+                  <p className="mt-1 whitespace-pre-wrap rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-800">
+                    {(apptNoteDraft[a.id] ?? "").trim() || "—"}
+                  </p>
+                )}
+                {canEditApptNotes && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={apptNoteSaving === a.id}
+                      onClick={() => void saveAppointmentNotes(a.id)}
+                      className="rounded-md border border-brand-600/40 bg-white px-4 py-2 text-xs font-bold text-brand-700 hover:bg-brand-50 disabled:opacity-50"
+                    >
+                      {apptNoteSaving === a.id ? "Saving…" : "Save draft"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={apptNoteSaving === a.id}
+                      onClick={() => void publishAppointmentNotes(a.id)}
+                      className="rounded-md bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-700 disabled:opacity-50"
+                    >
+                      Publish & lock
+                    </button>
+                  </div>
+                )}
+              </li>
+            );
+          })}
           {appointments.length === 0 && (
             <li className="space-y-3 text-sm text-slate-500">
               <p>No appointments for this patient.</p>
-              <button
-                type="button"
-                onClick={() => {
-                  setMsg(null);
-                  setShowAddVisitNote(true);
-                }}
-                className="rounded-lg bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-700"
-              >
-                Add visit note
-              </button>
+              {canAddStandaloneVisitNote && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMsg(null);
+                    setShowAddVisitNote(true);
+                  }}
+                  className="rounded-lg bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-700"
+                >
+                  Add visit note
+                </button>
+              )}
             </li>
           )}
         </ul>

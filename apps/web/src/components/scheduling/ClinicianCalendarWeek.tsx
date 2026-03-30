@@ -13,10 +13,12 @@ export type StaffBookingDetail = {
   appointmentId: string;
   startAt: string;
   patientId: string;
+  clinicianId: string | null;
   patientName: string;
   title: string;
   facilityName: string;
   notes: string | null;
+  notesPublishedAt: string | null;
   status: string;
   clinicianName: string;
 };

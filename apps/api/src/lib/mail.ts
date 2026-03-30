@@ -23,7 +23,7 @@ function logDevEmail(kind: string, to: string, subject: string, html: string, ex
         console.info(extra);
     console.info("— HTML preview (first 800 chars) —\n", html.slice(0, 800) + (html.length > 800 ? "…" : ""));
     console.info("────────────────────────────────────────────────\n");
-    console.info("Set SMTP_HOST, SMTP_USER, SMTP_PASS (and SMTP_PORT if not 587) in apps/api/.env to send real mail.\n");
+    console.info("Set SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_FROM (and SMTP_PORT if not 587) in apps/api/.env or your host’s Environment (e.g. Render) to send real mail.\n");
 }
 async function sendTransactional(cfg: AppConfig, kind: string, to: string, subject: string, html: string, text: string, devExtra?: string): Promise<void> {
     const t = createTransport(cfg);
@@ -37,6 +37,7 @@ async function sendTransactional(cfg: AppConfig, kind: string, to: string, subje
     }
     catch (e) {
         console.error(`[mail] ${kind} failed:`, e);
+        console.error("[mail] Check SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, and SMTP_FROM. On Render, set these under Environment for your web service.");
     }
 }
 export async function sendWelcomeEmail(cfg: AppConfig, to: string, name: string): Promise<void> {

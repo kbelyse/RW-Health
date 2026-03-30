@@ -39,7 +39,9 @@ export function DashboardRecordsPage() {
         Medical records
       </h1>
       <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">
-        Visit notes from your clinicians (not lab tests — those are under Lab results).
+        These are <strong>clinical visit summaries</strong> from your care team (what was discussed, assessment,
+        plan). They are not the same as <strong>lab results</strong> — quantitative tests live under{" "}
+        <em>Lab results</em> in the sidebar.
       </p>
       {err && (
         <p className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">

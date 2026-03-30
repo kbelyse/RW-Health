@@ -37,6 +37,7 @@ export type AppointmentRow = {
   scheduledAt: string;
   status: string;
   notes?: string | null;
+  notesPublishedAt?: string | null;
   createdBy?: { id: string; fullName: string; role: string };
   clinician?: { id: string; fullName: string; email: string } | null;
   patient?: { fullName: string; email: string };
@@ -679,7 +680,7 @@ function StaffAppointments() {
     await loadStaffCalendar();
   }
 
-  async function saveBookingNotes() {
+  async function saveBookingNotes(closeAfter = true) {
     if (!bookingDialog) return;
     setSlotErr(null);
     const r = await api<{ appointment: AppointmentRow }>(
@@ -694,6 +695,35 @@ function StaffAppointments() {
       return;
     }
     setSlotMsg("Visit notes saved.");
+    if (closeAfter)
+      setBookingDialog(null);
+    await load();
+    await loadStaffCalendar();
+  }
+
+  async function publishBookingNotesFromDialog() {
+    if (!bookingDialog) return;
+    setSlotErr(null);
+    const rSave = await api<{ appointment: AppointmentRow }>(
+      `/api/appointments/${encodeURIComponent(bookingDialog.appointmentId)}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ notes: bookingNotesDraft }),
+      },
+    );
+    if (!rSave.ok) {
+      setSlotErr(rSave.error ?? "Could not save notes");
+      return;
+    }
+    const rPub = await api<{ appointment: AppointmentRow }>(
+      `/api/appointments/${encodeURIComponent(bookingDialog.appointmentId)}/publish-notes`,
+      { method: "POST", body: JSON.stringify({}) },
+    );
+    if (!rPub.ok) {
+      setSlotErr(rPub.error ?? "Could not publish notes");
+      return;
+    }
+    setSlotMsg("Visit notes published and locked.");
     setBookingDialog(null);
     await load();
     await loadStaffCalendar();
@@ -1609,41 +1639,88 @@ function StaffAppointments() {
               </p>
               <p className="text-xs uppercase text-slate-500">Status: {bookingDialog.status}</p>
             </div>
-            <label className="mt-4 block text-sm font-medium text-slate-700" htmlFor="visit-notes">
-              Visit notes (clinical)
-            </label>
-            <textarea
-              id="visit-notes"
-              rows={5}
-              value={bookingNotesDraft}
-              onChange={(e) => setBookingNotesDraft(e.target.value)}
-              placeholder="Add or update notes after the visit…"
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#0059B3] focus:ring-2 focus:ring-[#0059B3]/20"
-            />
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link
-                to={`/dashboard/patients/${encodeURIComponent(bookingDialog.patientId)}`}
-                className="inline-flex items-center rounded-lg border border-[#0059B3]/30 bg-[#0059B3]/5 px-4 py-2 text-sm font-semibold text-[#0059B3] hover:bg-[#0059B3]/10"
-              >
-                Full patient history
-              </Link>
-            </div>
-            <div className="mt-6 flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setBookingDialog(null)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-              >
-                Close
-              </button>
-              <button
-                type="button"
-                onClick={() => void saveBookingNotes()}
-                className="rounded-lg bg-[#0059B3] px-4 py-2 text-sm font-bold text-white hover:bg-[#004a99]"
-              >
-                Save notes
-              </button>
-            </div>
+            {(() => {
+              const visitReached =
+                bookingDialog && new Date(bookingDialog.startAt) <= new Date();
+              const notesLocked = !!bookingDialog.notesPublishedAt;
+              const canEditNotes =
+                bookingDialog &&
+                user &&
+                !notesLocked &&
+                visitReached &&
+                (user.role === "ADMIN" || user.id === bookingDialog.clinicianId);
+              return (
+                <>
+                  <label className="mt-4 block text-sm font-medium text-slate-700" htmlFor="visit-notes">
+                    Visit notes (clinical)
+                  </label>
+                  {notesLocked && (
+                    <p className="mt-1 rounded-md bg-slate-100 px-3 py-2 text-xs text-slate-600">
+                      Published — read-only for all clinicians. Cannot be changed.
+                    </p>
+                  )}
+                  {!visitReached && (user?.role === "ADMIN" || user?.id === bookingDialog.clinicianId) && (
+                    <p className="mt-1 text-xs text-amber-800">
+                      Notes unlock after the scheduled visit time.
+                    </p>
+                  )}
+                  {visitReached && !notesLocked && user?.id !== bookingDialog.clinicianId && user?.role !== "ADMIN" && (
+                    <p className="mt-1 text-xs text-slate-600">
+                      Only the assigned clinician can add or edit notes for this visit.
+                    </p>
+                  )}
+                  {canEditNotes ? (
+                    <textarea
+                      id="visit-notes"
+                      rows={5}
+                      value={bookingNotesDraft}
+                      onChange={(e) => setBookingNotesDraft(e.target.value)}
+                      placeholder="Draft clinical notes — save, then publish when ready to lock…"
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#0059B3] focus:ring-2 focus:ring-[#0059B3]/20"
+                    />
+                  ) : (
+                    <p className="mt-1 whitespace-pre-wrap rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-800">
+                      {bookingNotesDraft.trim() || "—"}
+                    </p>
+                  )}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Link
+                      to={`/dashboard/patients/${encodeURIComponent(bookingDialog.patientId)}`}
+                      className="inline-flex items-center rounded-lg border border-[#0059B3]/30 bg-[#0059B3]/5 px-4 py-2 text-sm font-semibold text-[#0059B3] hover:bg-[#0059B3]/10"
+                    >
+                      Full patient chart
+                    </Link>
+                  </div>
+                  <div className="mt-6 flex flex-wrap justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setBookingDialog(null)}
+                      className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                    >
+                      Close
+                    </button>
+                    {canEditNotes && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => void saveBookingNotes(false)}
+                          className="rounded-lg border border-[#0059B3]/40 bg-white px-4 py-2 text-sm font-bold text-[#0059B3] hover:bg-[#0059B3]/5"
+                        >
+                          Save draft
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void publishBookingNotesFromDialog()}
+                          className="rounded-lg bg-[#0059B3] px-4 py-2 text-sm font-bold text-white hover:bg-[#004a99]"
+                        >
+                          Publish & lock
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
