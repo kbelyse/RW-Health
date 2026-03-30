@@ -1,7 +1,9 @@
 # RW-Health Passport — A Web-Based Platform for Health Records and Laboratory Results (Rwanda)
 
 **Repository:** [github.com/kbelyse/RW-Health](https://github.com/kbelyse/RW-Health) · 
+
 **Live app:** [rw-health.onrender.com](https://rw-health.onrender.com/) · 
+
 **SRS (Google Doc):** [open document](https://docs.google.com/document/d/19RksatWQPfJONQPQNpZ_BXnrMslHZHepvUOEkU6mMNQ/edit)
 
 ---
@@ -59,7 +61,5 @@ Optional: to run a **production build** on your machine after `npm run build`, u
 | `apps/web` | React + Vite + Tailwind PWA |
 | `apps/api` | Express + Prisma + SQLite |
 | `packages/shared` | Shared TypeScript types |
-
-Never commit `apps/api/.env` or other secrets.
 
 ---
