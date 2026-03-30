@@ -1,64 +1,73 @@
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/auth/AuthContext";
-import { useOnline } from "@/hooks/useOnline";
-import { OfflineBar } from "./OfflineBar";
 import { RWHealthLogo } from "@/components/brand/RWHealthLogo";
 
-const nav = [
-  { to: "/", label: "Home" },
-  { to: "/#mission", label: "Mission" },
-];
-
-const btnPrimary =
-  "inline-flex min-h-[52px] items-center justify-center rounded-sm bg-brand-600 px-8 text-base font-semibold text-white transition hover:bg-brand-700";
+const homeAnchors = [
+  { href: "/#hero", label: "Home" },
+  { href: "/#why-us", label: "Why us" },
+  { href: "/#activities", label: "Activities" },
+  { href: "/#cta", label: "Demo" },
+] as const;
 
 export function Layout() {
   const { user, logout } = useAuth();
-  const online = useOnline();
   const [open, setOpen] = useState(false);
+  const location = useLocation();
+  const isHome = location.pathname === "/";
+  const [navSolid, setNavSolid] = useState(false);
+
+  useEffect(() => {
+    if (!isHome) {
+      setNavSolid(false);
+      return;
+    }
+    const onScroll = () => setNavSolid(window.scrollY > 40);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [isHome]);
+
+  const transparentHero = isHome && !navSolid;
+
+  const navLinkClass = transparentHero
+    ? "rounded-md px-3 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/10 hover:text-white"
+    : "rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900";
+
+  const headerClass = isHome
+    ? navSolid
+      ? "fixed inset-x-0 top-0 z-50 border-b border-slate-200/90 bg-white/95 backdrop-blur-xl"
+      : "fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-transparent"
+    : "sticky top-0 z-50 border-b border-slate-200/90 bg-white/95 backdrop-blur-xl";
+
+  const menuBtnClass = transparentHero
+    ? "rounded-md p-3 text-white hover:bg-white/10"
+    : "rounded-md p-3 text-slate-700 hover:bg-slate-100";
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <OfflineBar online={online} />
-      <header className="sticky top-0 z-50 border-b border-slate-200/90 bg-white/98 backdrop-blur-md">
-        <div className="mx-auto flex min-h-[72px] max-w-6xl items-center justify-between gap-4 px-4 py-4 md:min-h-[80px] md:px-6 md:py-5">
-          <Link to="/" className="group flex items-center gap-2">
-            <RWHealthLogo size="md" />
+    <div className="flex min-h-screen flex-col bg-slate-50">
+      <header className={headerClass}>
+        <div className="mx-auto flex min-h-[5.25rem] max-w-6xl items-center justify-between gap-4 px-5 py-3 md:min-h-[5.5rem] md:px-8">
+          <Link to="/" className="group flex items-center gap-2 transition hover:opacity-90">
+            <RWHealthLogo size="md" variant={transparentHero ? "dark" : "light"} />
           </Link>
-          <nav className="hidden items-center gap-1 md:flex">
-            {nav.map((n) =>
-              n.to.startsWith("/#") ? (
-                <a
-                  key={n.to}
-                  href={n.to}
-                  className="rounded-sm px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-                >
-                  {n.label}
-                </a>
-              ) : (
-                <NavLink
-                  key={n.to}
-                  to={n.to}
-                  className={({ isActive }) =>
-                    `rounded-sm px-4 py-3 text-sm font-semibold transition ${
-                      isActive
-                        ? "bg-brand-50 text-brand-900"
-                        : "text-slate-700 hover:bg-slate-100"
-                    }`
-                  }
-                >
-                  {n.label}
-                </NavLink>
-              )
-            )}
+          <nav className="hidden items-center gap-0.5 md:flex md:gap-1">
+            {homeAnchors.map((n) => (
+              <a key={n.href} href={n.href} className={navLinkClass}>
+                {n.label}
+              </a>
+            ))}
             {user && (
               <NavLink
                 to="/dashboard"
                 className={({ isActive }) =>
-                  `rounded-sm px-4 py-3 text-sm font-semibold transition ${
-                    isActive ? "bg-brand-50 text-brand-900" : "text-slate-700 hover:bg-slate-100"
+                  `ml-1 rounded-md px-3 py-2 text-sm font-semibold transition lg:ml-2 lg:px-4 ${
+                    isActive
+                      ? transparentHero
+                        ? "bg-white text-[#0059B3]"
+                        : "bg-[#0059B3] text-white"
+                      : navLinkClass
                   }`
                 }
               >
@@ -69,19 +78,38 @@ export function Layout() {
               <button
                 type="button"
                 onClick={() => void logout()}
-                className="ml-2 rounded-sm border border-slate-300/90 px-6 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
+                className={
+                  transparentHero
+                    ? "ml-1 rounded-md border border-white/30 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/10 lg:ml-2 lg:px-4"
+                    : "ml-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 lg:ml-2 lg:px-4"
+                }
               >
                 Sign out
               </button>
             ) : (
-              <Link to="/login" className={`ml-3 ${btnPrimary} !px-8`}>
-                Sign in
-              </Link>
+              <div
+                className={
+                  transparentHero
+                    ? "ml-2 flex items-center border-l border-white/20 pl-3 lg:ml-4 lg:pl-4"
+                    : "ml-2 flex items-center border-l border-slate-200 pl-3 lg:ml-4 lg:pl-4"
+                }
+              >
+                <Link
+                  to="/login"
+                  className={
+                    transparentHero
+                      ? "inline-flex min-h-[44px] min-w-[5.5rem] items-center justify-center rounded-md border border-white/40 px-4 text-sm font-bold text-white transition hover:bg-white/10"
+                      : "inline-flex min-h-[44px] min-w-[5.5rem] items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-bold text-[#0059B3] transition hover:bg-slate-50"
+                  }
+                >
+                  Login
+                </Link>
+              </div>
             )}
           </nav>
           <button
             type="button"
-            className="rounded-sm p-3 md:hidden"
+            className={`${menuBtnClass} md:hidden`}
             onClick={() => setOpen((v) => !v)}
             aria-label="Menu"
           >
@@ -89,27 +117,23 @@ export function Layout() {
           </button>
         </div>
         {open && (
-          <div className="border-t border-slate-100 px-4 py-4 md:hidden">
-            <div className="flex flex-col gap-1">
-              <Link
-                to="/"
-                onClick={() => setOpen(false)}
-                className="rounded-sm px-4 py-3 text-sm font-semibold text-slate-800"
-              >
-                Home
-              </Link>
-              <a
-                href="/#mission"
-                onClick={() => setOpen(false)}
-                className="rounded-sm px-4 py-3 text-sm font-semibold text-slate-800"
-              >
-                Mission
-              </a>
+          <div className="border-t border-slate-100 bg-white px-5 py-5 md:hidden">
+            <div className="flex flex-col gap-0.5">
+              {homeAnchors.map((n) => (
+                <a
+                  key={n.href}
+                  href={n.href}
+                  onClick={() => setOpen(false)}
+                  className="rounded-md px-3 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                >
+                  {n.label}
+                </a>
+              ))}
               {user && (
                 <Link
                   to="/dashboard"
                   onClick={() => setOpen(false)}
-                  className="rounded-sm px-4 py-3 text-sm font-semibold text-slate-800"
+                  className="rounded-md px-3 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
                 >
                   Workspace
                 </Link>
@@ -121,18 +145,20 @@ export function Layout() {
                     setOpen(false);
                     void logout();
                   }}
-                  className="rounded-sm px-4 py-3 text-left text-sm font-semibold text-slate-800"
+                  className="rounded-md px-3 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
                 >
                   Sign out
                 </button>
               ) : (
-                <Link
-                  to="/login"
-                  onClick={() => setOpen(false)}
-                  className={`${btnPrimary} mt-2 w-full`}
-                >
-                  Sign in
-                </Link>
+                <div className="mt-4 border-t border-slate-100 pt-4">
+                  <Link
+                    to="/login"
+                    onClick={() => setOpen(false)}
+                    className="flex min-h-[48px] items-center justify-center rounded-md border border-slate-200 bg-white text-sm font-bold text-[#0059B3] hover:bg-slate-50"
+                  >
+                    Login
+                  </Link>
+                </div>
               )}
             </div>
           </div>
@@ -141,31 +167,22 @@ export function Layout() {
       <main className="flex-1">
         <Outlet />
       </main>
-      <footer className="border-t border-slate-200/90 bg-slate-950 text-slate-400">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 md:flex-row md:items-center md:justify-between md:gap-8 md:px-6 md:py-5">
-          <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-            <RWHealthLogo size="sm" variant="dark" />
-            <p className="max-w-xs text-xs leading-relaxed text-slate-500">
-              Academic demo · not an official Government of Rwanda product.
-            </p>
-          </div>
+      <footer className="border-t border-slate-200/90 bg-slate-100/90 text-slate-600">
+        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-8 md:flex-row md:items-center md:justify-between md:gap-8 md:px-8 md:py-7">
           <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-medium">
-            <a href="/#platform" className="text-slate-400 transition hover:text-white">
-              Platform
+            <a href="/#why-us" className="text-slate-600 transition hover:text-[#0059B3]">
+              Why us
             </a>
-            <a href="/#flow" className="text-slate-400 transition hover:text-white">
-              Flow
+            <a href="/#activities" className="text-slate-600 transition hover:text-[#0059B3]">
+              Activities
             </a>
-            <a href="/#mission" className="text-slate-400 transition hover:text-white">
-              Mission
-            </a>
-            <Link to="/login" className="text-slate-400 transition hover:text-white">
+            <Link to="/login" className="text-slate-600 transition hover:text-[#0059B3]">
               Sign in
             </Link>
           </nav>
-          <p className="text-xs text-slate-600 md:text-right">Kigali · ALU</p>
+          <p className="text-xs text-slate-500 md:text-right">Kigali · ALU</p>
         </div>
-        <div className="border-t border-white/10 px-4 py-3 text-center text-[11px] text-slate-600 md:px-6">
+        <div className="border-t border-slate-200/80 px-5 py-3 text-center text-[11px] text-slate-500 md:px-8">
           © {new Date().getFullYear()} RW-Health Passport
         </div>
       </footer>

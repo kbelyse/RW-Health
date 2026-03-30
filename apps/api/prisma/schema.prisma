@@ -21,6 +21,7 @@ model User {
   fullName     String
   phone        String?
   role         UserRole
+  secondaryRole UserRole?
   emailVerified Boolean @default(false)
   resetToken    String?
   resetExpires  DateTime?
@@ -34,6 +35,19 @@ model User {
   appointments          Appointment[] @relation("PatientAppointments")
   appointmentsCreated   Appointment[] @relation("AppointmentCreatedBy")
   appointmentsAsClinician Appointment[] @relation("AppointmentClinician")
+  clinicianSlotsOffered   ClinicianSlot[] @relation("ClinicianOpenSlots")
+}
+
+model ClinicianSlot {
+  id             String   @id @default(cuid())
+  clinicianId    String
+  clinician      User     @relation("ClinicianOpenSlots", fields: [clinicianId], references: [id], onDelete: Cascade)
+  facilityName   String
+  title          String   @default("Visit")
+  startAt        DateTime
+  createdAt      DateTime @default(now())
+
+  @@index([clinicianId, startAt])
 }
 
 model HealthRecord {
@@ -64,6 +78,8 @@ model LabResult {
   collectedAt    DateTime
   reportedAt     DateTime @default(now())
   createdAt      DateTime @default(now())
+  reportOriginalName String?
+  reportStoredName   String?
 }
 
 model Appointment {

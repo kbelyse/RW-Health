@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth, type AuthedRequest } from "../middleware/auth.js";
 import { UserRole } from "@prisma/client";
+import { whereUserHasClinicianCapability } from "../lib/roleQueries.js";
 
 export function createProvidersRouter(): Router {
   const r = Router();
@@ -17,7 +18,7 @@ export function createProvidersRouter(): Router {
       return;
     }
     const clinicians = await prisma.user.findMany({
-      where: { role: UserRole.CLINICIAN },
+      where: whereUserHasClinicianCapability,
       select: { id: true, fullName: true, email: true },
       orderBy: { fullName: "asc" },
     });

@@ -4,6 +4,9 @@ import { prisma } from "../lib/prisma.js";
 import { requireAuth, requireRoles, type AuthedRequest } from "../middleware/auth.js";
 import { UserRole } from "@prisma/client";
 import { audit } from "../lib/audit.js";
+import { whereUserIsPatientWithId } from "../lib/roleQueries.js";
+import type { AppConfig } from "../config.js";
+import { notifyHealthRecordAdded } from "../lib/mail.js";
 
 const createSchema = z.object({
   patientId: z.string().min(1),
@@ -13,7 +16,7 @@ const createSchema = z.object({
   visitDate: z.string().datetime(),
 });
 
-export function createRecordsRouter(): Router {
+export function createRecordsRouter(cfg: AppConfig): Router {
   const r = Router();
 
   r.get("/", requireAuth, async (req: AuthedRequest, res) => {
@@ -53,7 +56,7 @@ export function createRecordsRouter(): Router {
     }
     const d = parsed.data;
     const patient = await prisma.user.findFirst({
-      where: { id: d.patientId, role: UserRole.PATIENT },
+      where: whereUserIsPatientWithId(d.patientId),
     });
     if (!patient) {
       res.status(404).json({ error: "Patient not found" });
@@ -70,6 +73,12 @@ export function createRecordsRouter(): Router {
       },
     });
     await audit(req.userId, "CREATE_RECORD", "HealthRecord", { id: rec.id });
+    void notifyHealthRecordAdded(cfg, {
+      patientEmail: patient.email,
+      patientName: patient.fullName,
+      title: rec.title,
+      facilityName: rec.facilityName,
+    });
     res.status(201).json({ record: rec });
   });
 

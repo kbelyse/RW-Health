@@ -1,60 +1,66 @@
 # RW-Health Passport
 
-Web app for consolidated health records and lab results (Rwanda context, ALU formative project). **Monorepo:** React PWA (`apps/web`) + Express API (`apps/api`) + Prisma/SQLite.
+## Description of the system
+
+**RW-Health Passport** is a web application that consolidates health-related information in one place: a patient can view records, lab results, appointments, and care-team context; clinicians and staff can manage scheduling, visits, and patient charts; lab staff can upload structured results. The stack is a **React (Vite) PWA** frontend, an **Express** API, **Prisma** with **SQLite**, and cookie-based authentication.
 
 ---
 
-## Summative submission checklist (Canvas)
+## Problem statement
 
-Use this list before you submit the **Google Doc** link on Canvas.
-
-| Requirement | What to do |
-|-------------|------------|
-| **Google Doc name** | `personNames_[Summative]_[MMDDYYYY]` (replace with your names and date, e.g. `AdaLovelace_Bob_Summative_03282026`) |
-| **In the doc** | Link to your **video** (5–10 min), **public GitHub repo**, **SRS document**, and **publicly accessible app URL** |
-| **GitHub** | Public repo; this README must be enough for someone to run the project locally |
-| **Sharing** | Google Doc: **Anyone with the link can view**; test every link in an incognito window |
-| **Broken links** | Broken links can score **0**; double-check after publishing |
-
-**Video should cover (among other points):**  
-- What the system is · **problem statement** · why it matters · **proposed solution** · **live demo**  
-- How the prototype reflects the **SRS** and the **actors / processes** in your system design  
+Patients and care teams often rely on fragmented information (paper, ad hoc messages, separate systems). That makes it harder to see a complete picture of care, coordinate visits, and share lab data in a structured way.
 
 ---
 
-## What reviewers will run (quick path)
+## Why is this a problem?
 
-1. Install **Node.js 20+** and **Git** (npm is included with Node).
-2. Clone your **public** GitHub repository and `cd` into the project root (the folder that contains this `README.md`).
-3. Run **exactly** these commands in order:
-
-```bash
-npm install
-npm run setup
-npm run db:push
-npm run db:seed
-npm run dev
-```
-
-4. Open a browser at **http://localhost:5173**  
-   - The frontend runs on port **5173** and proxies `/api` to the API on **http://localhost:4000**.
-
-5. **Stop the servers:** in the terminal where `npm run dev` is running, press `Ctrl+C`.
-
-If anything fails, see **Troubleshooting** below.
+Fragmented health information increases friction for patients (harder to follow their own care), for clinicians (more time spent reconciling details), and for quality of care (missed context). A single, coherent portal reduces duplication and improves clarity when designed around the roles that actually use the system.
 
 ---
 
-## Step-by-step (first-time setup)
+## Proposed solution
+
+This prototype implements a **digital health passport**: role-based dashboards (patient, clinician, lab, admin), authentication, appointments and scheduling, visit records, lab workflows, and patient charts—aligned with the course SRS and system design. It is intended as a **demonstration prototype**, not a certified medical device.
+
+---
+
+## Demo
+
+- **Video walkthrough:** paste your **5–10 minute demo URL** in your submission Google Doc (required by the course).  
+- **Live public app:** **`<paste your live deployment URL here>`** — replace this line with a real, publicly reachable URL before submission.  
+- The sections below describe how to run the **same** project **locally** so graders and reviewers can verify the code.
+
+---
+
+## SRS and system design
+
+The prototype is built to reflect the **functional requirements** in the **SRS** and the **actors and processes** described in the **system design** (e.g. patient, clinician, lab, admin flows; login/register; core pages and flows).  
+
+**Link to SRS document:** **`<paste your SRS link here (Google Doc or PDF)>`** — add the working link in your Google Doc and optionally here once it is stable.
+
+---
+
+## How to run the project locally (every step)
+
+Follow these steps **in order** from a clean machine. Use a terminal (PowerShell, Command Prompt, Terminal, or Git Bash on Windows).
+
+### Prerequisites
+
+1. Install **Node.js 20+** (LTS recommended).  
+   - Check: `node -v` → should show `v20.x` or higher.  
+2. Install **Git**.  
+   - Check: `git --version`.  
+3. **npm** is included with Node.  
+   - Check: `npm -v`.
 
 ### Step 1 — Clone the repository
 
 ```bash
-git clone <YOUR_PUBLIC_GITHUB_URL>
+git clone <YOUR_PUBLIC_GITHUB_REPO_URL>
 cd <folder-name>
 ```
 
-You should see `apps/`, `packages/`, `package.json`, and this `README.md`.
+You should see `apps/`, `packages/`, `package.json`, and this `README.md` in the project root.
 
 ### Step 2 — Install dependencies
 
@@ -62,7 +68,7 @@ You should see `apps/`, `packages/`, `package.json`, and this `README.md`.
 npm install
 ```
 
-**Expected:** `node_modules/` is created at the repo root (no errors).
+**Expected:** Command completes without errors; `node_modules/` appears at the repo root.
 
 ### Step 3 — Create the API environment file
 
@@ -70,61 +76,81 @@ npm install
 npm run setup
 ```
 
-**What it does:** copies `apps/api/.env.example` → `apps/api/.env` if `.env` does not exist yet.  
-**Do not commit `apps/api/.env`** (it is gitignored).
+**What it does:** If `apps/api/.env` does **not** exist, it copies `apps/api/.env.example` → `apps/api/.env`.  
+**If you already have `apps/api/.env`**, this step does not overwrite it.
 
-### Step 4 — Create the database and tables
+**Important:** Do **not** commit `apps/api/.env` (it is gitignored). It may contain secrets.
+
+### Step 4 — Verify environment (optional but recommended)
+
+Open `apps/api/.env` and confirm:
+
+- `DATABASE_URL` is set (default for local dev: `file:./dev.db` under `apps/api` as used by Prisma scripts).  
+- `JWT_SECRET` is at least **32 characters** (change the default for anything beyond local demo).
+
+### Step 5 — Create the database tables
+
+From the **repository root** (same folder as `package.json`):
 
 ```bash
 npm run db:push
 ```
 
-**Expected:** SQLite file `apps/api/dev.db` is created/updated. Uses Prisma with `DATABASE_URL` from the npm script.
+**Expected:** Prisma applies the schema; SQLite file `apps/api/dev.db` is created or updated.
 
-### Step 5 — Seed demo data (users, sample records)
+### Step 6 — Load demo data
 
 ```bash
 npm run db:seed
 ```
 
-**Expected:** Demo users are inserted (see table below).
+**Expected:** Demo users and sample data are inserted (see **Demo accounts** below).
 
-### Step 6 — Start API + web together
+### Step 7 — Start the API and the web app
 
 ```bash
 npm run dev
 ```
 
-**Expected:** Two processes start (API + Vite). Logs should show the API listening on port **4000** and Vite on **5173**.
+**Expected:**
 
-### Step 7 — Open the app
+- Terminal shows the **API** listening on **http://localhost:4000** (or similar).  
+- Terminal shows **Vite** on **http://localhost:5173**.  
+- Leave this terminal **open** while testing.
 
-- Browser: **http://localhost:5173**
-- Register a new account or sign in with a demo account.
+### Step 8 — Open the application in a browser
+
+1. Go to **http://localhost:5173** (not only port 4000).  
+2. The dev server proxies `/api` to the backend so you stay on one origin during development.  
+3. Register a new user **or** sign in with a **demo account** (after seed).
+
+### Step 9 — Stop the servers
+
+In the terminal where `npm run dev` is running, press **Ctrl+C**.
 
 ---
 
 ## Demo accounts (after `npm run db:seed`)
 
-| Role   | Email               | Password |
-|--------|---------------------|----------|
-| Patient | `patient@demo.local` | `DemoRw2026!` |
+| Role      | Email              | Password         |
+|-----------|--------------------|------------------|
+| Patient   | `patient@demo.local`   | `DemoRw2026!` |
 | Clinician | `clinician@demo.local` | `DemoRw2026!` |
-| Lab | `lab@demo.local` | `DemoRw2026!` |
-| Admin | `admin@demo.local` | `DemoRw2026!` |
+| Lab       | `lab@demo.local`       | `DemoRw2026!` |
+| Admin     | `admin@demo.local`     | `DemoRw2026!` |
 
 ---
 
-## What each npm script does
+## npm scripts (reference)
 
-| Command | Purpose |
-|---------|---------|
-| `npm install` | Installs all workspace packages (`apps/web`, `apps/api`, `packages/shared`). |
-| `npm run setup` | Creates `apps/api/.env` from `.env.example` if missing. |
-| `npm run db:push` | Applies Prisma schema to `apps/api/dev.db`. |
-| `npm run db:seed` | Loads demo users and sample data. |
-| `npm run dev` | Runs API (`:4000`) and web dev server (`:5173`) with `/api` proxy. |
-| `npm run build` | Builds shared package, API, and production frontend bundle. |
+| Command           | What it does |
+|-------------------|--------------|
+| `npm install`     | Installs all workspace packages. |
+| `npm run setup`   | Creates `apps/api/.env` from `.env.example` if missing. |
+| `npm run db:push` | Applies Prisma schema to SQLite. |
+| `npm run db:seed` | Seeds demo users and data. |
+| `npm run dev`     | Runs API + Vite together. |
+| `npm run build`   | Production build (API + frontend). |
 
 ---
 
@@ -134,55 +160,13 @@ npm run dev
 npm run build
 ```
 
-Produces:
-
-- `apps/api/dist/` — compiled API  
-- `apps/web/dist/` — static frontend  
+Produces `apps/api/dist/` and `apps/web/dist/`. For deployment, serve the API and static files per your host (cookie auth works best when the UI and `/api` share the same site origin).
 
 ---
 
-## Public deployment (one URL for Canvas)
+## Email (optional, local dev)
 
-The grader needs a **public URL** that works from any browser. The app uses **cookie-based auth** and calls **`/api`** on the **same site**, so the simplest deployment is **one server** that serves both the API and the built frontend.
-
-### 1. Build everything
-
-From the repo root:
-
-```bash
-npm install
-npm run build
-```
-
-### 2. Production environment variables
-
-On the host (e.g. Railway, Render, Fly.io), set at least:
-
-| Variable | Example | Notes |
-|----------|---------|--------|
-| `NODE_ENV` | `production` | Required for SPA static serving path. |
-| `PORT` | `4000` or platform’s port | Use `$PORT` if the platform injects it. |
-| `DATABASE_URL` | `file:./prod.db` | SQLite path on disk; use a **persistent disk** if your host wipes ephemeral storage. |
-| `JWT_SECRET` | long random string (min 32 chars) | **Required**; never commit. |
-| `COOKIE_SECURE` | `true` | Use HTTPS in production. |
-| `CORS_ORIGIN` | `https://your-public-domain.com` | **Must match** the public URL of the app (same origin in this setup). |
-| `WEB_DIST` | `../web/dist` | If the process **working directory** is `apps/api`, this points to the built UI. |
-
-Run migrations/seed on the server as needed (e.g. `npx prisma db push` and `npm run db:seed` with `DATABASE_URL` set, from `apps/api`).
-
-### 3. Start command (typical)
-
-From `apps/api` (after `npm run build` at repo root):
-
-```bash
-NODE_ENV=production WEB_DIST=../web/dist node dist/index.js
-```
-
-Adjust `WEB_DIST` to an absolute path if your host starts from a different directory.
-
-### 4. HTTPS
-
-Use the platform’s HTTPS or a reverse proxy. Set `COOKIE_SECURE=true` and `CORS_ORIGIN` to your **https** URL.
+To send real email (e.g. password reset), set `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, etc. in **`apps/api/.env`**. See **`apps/api/.env.example`**. If SMTP is not configured, the API typically **logs** email content to the **API terminal** in development.
 
 ---
 
@@ -190,11 +174,28 @@ Use the platform’s HTTPS or a reverse proxy. Set `COOKIE_SECURE=true` and `COR
 
 | Issue | What to try |
 |-------|-------------|
-| `npm install` fails | Use Node.js **20 LTS**; delete `node_modules` and `package-lock.json` only if your instructor allows, then reinstall. |
-| `JWT_SECRET` / config errors | Ensure `apps/api/.env` exists (`npm run setup`) and `JWT_SECRET` is at least 32 characters. |
-| `db:push` fails | Run from repo root; ensure `apps/api/.env` exists with `DATABASE_URL=file:./dev.db`. |
-| Blank page / API errors | Confirm **both** processes are up (`npm run dev`) and you are using **http://localhost:5173** (not only port 4000). |
-| Emails not sending | Password reset uses SMTP only if `SMTP_*` is set in `apps/api/.env`; otherwise check API logs in development. |
+| `npm install` fails | Use Node.js **20+**; run from repo root. |
+| Config / JWT errors | Ensure `apps/api/.env` exists and `JWT_SECRET` is ≥ 32 characters. |
+| `db:push` fails | Run from repo root; check `DATABASE_URL` in `apps/api/.env`. |
+| Blank page or API errors | Confirm **both** processes from `npm run dev` are running; use **http://localhost:5173**. |
+| Emails not received | Configure SMTP or read the API console logs. |
+
+---
+
+## Submission checklist (course)
+
+Use this **Google Doc** (name: **`personNames_[Summative]_[MMDDYYYY]`**) and include:
+
+| Item | Action |
+|------|--------|
+| Video | Paste link to your **demo video** (5–10 min). |
+| GitHub | Paste link to this **public** repository. |
+| README | This file explains **every step** to run the project locally (see above). |
+| SRS | Paste a **working link** to your SRS document. |
+| Live app | Paste a **publicly accessible URL** to the deployed product (test in an incognito window). |
+| Access | Share the Google Doc so **anyone with the link can view**; **test every link** before submitting. |
+
+**Submit the Google Doc link on Canvas by the deadline stated in your course (e.g. **28 March 2026**).** Broken or inaccessible links may receive **no credit** for those items—verify each link after publishing.
 
 ---
 
@@ -202,42 +203,19 @@ Use the platform’s HTTPS or a reverse proxy. Set `COOKIE_SECURE=true` and `COR
 
 | Path | Purpose |
 |------|---------|
-| `apps/web` | Vite + React + Tailwind + PWA |
+| `apps/web` | React + Vite + Tailwind PWA |
 | `apps/api` | Express + Prisma + SQLite |
 | `packages/shared` | Shared TypeScript types |
-| `scripts/setup-env.mjs` | Copies `.env.example` → `.env` |
-
-See **`AUTHORS`** for contributor names (ALU-style).
-
----
-
-## SRS document
-
-Add your **SRS** as a **PDF or Google Doc** link in the submission Google Doc (not necessarily in this repo). If you also store a copy in the repo, link it from this README.
-
----
-
-## Git: own repo for submission
-
-```bash
-cd RW-Health
-git init
-git add .
-git status
-git commit -m "Initial commit: RW-Health Passport monorepo"
-```
-
-Push to a **public** GitHub repository. `.gitignore` excludes `node_modules`, `apps/api/.env`, and `*.db`.
 
 ---
 
 ## Security
 
-- Never commit secrets; only use `apps/api/.env` locally or in the host’s secret store.
-- The browser talks to **`/api`** only; no API keys are embedded in the client bundle.
+- Never commit `apps/api/.env` or production secrets.  
+- Use HTTPS and `COOKIE_SECURE=true` in production.
 
 ---
 
 ## License
 
-Academic / formative use unless your institution specifies otherwise.
+Academic / educational use unless your institution specifies otherwise.

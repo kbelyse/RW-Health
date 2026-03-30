@@ -26,16 +26,17 @@ export function DashboardCareTeamPage() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-bold text-slate-900">Care team</h1>
-      <p className="mt-1 text-sm text-slate-600">
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-600">Network</p>
+      <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-slate-900">Care team</h1>
+      <p className="mt-3 max-w-2xl text-base leading-relaxed text-slate-600">
         Clinicians registered on the platform. When you request an appointment, you can pick one of
         these doctors if you have a preference.
       </p>
-      {err && <p className="mt-4 text-sm text-red-600">{err}</p>}
-      <DashCard title="Clinicians" icon={<Users className="h-4 w-4 text-brand-600" />} className="mt-6">
+      {err && <p className="mt-6 text-sm text-red-600">{err}</p>}
+      <DashCard title="Clinicians" icon={<Users className="h-5 w-5 text-brand-600" />} className="mt-10">
         <ul className="divide-y divide-slate-100">
           {clinicians.map((c) => (
-            <li key={c.id} className="flex flex-col gap-0.5 py-3 first:pt-0">
+            <li key={c.id} className="flex flex-col gap-1 py-4 first:pt-0">
               <span className="font-semibold text-slate-900">{c.fullName}</span>
               <span className="text-sm text-slate-600">{c.email}</span>
             </li>

@@ -18,12 +18,13 @@ async function main() {
   });
   const clinician = await prisma.user.upsert({
     where: { email: "clinician@demo.local" },
-    update: {},
+    update: { secondaryRole: UserRole.PATIENT },
     create: {
       email: "clinician@demo.local",
       passwordHash: pass,
       fullName: "Dr. Demo Uwimana",
       role: UserRole.CLINICIAN,
+      secondaryRole: UserRole.PATIENT,
       emailVerified: true,
     },
   });
