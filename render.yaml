@@ -1,0 +1,9 @@
+# Render Blueprint — correct start command runs `prisma db push` before the API.
+# If you already created the service manually, set the same Build / Start in the dashboard (see README).
+services:
+  - type: web
+    name: rw-health
+    runtime: node
+    buildCommand: npm run build:render
+    startCommand: npm run start:prod
+    # Root directory = repo root (default). Do not set to apps/api unless you change paths.
