@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode, } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, } from "react";
 import { api } from "@/api/client";
 export type Role = "PATIENT" | "CLINICIAN" | "LAB" | "ADMIN";
 export interface User {
@@ -34,7 +34,9 @@ export function AuthProvider({ children }: {
 }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const authEpochRef = useRef(0);
     const refresh = useCallback(async () => {
+        const epoch = ++authEpochRef.current;
         let r = await api<{
             user: User | null;
         }>("/api/auth/me");
@@ -44,6 +46,8 @@ export function AuthProvider({ children }: {
                 user: User | null;
             }>("/api/auth/me");
         }
+        if (epoch !== authEpochRef.current)
+            return;
         if (!r.ok) {
             setUser(null);
             return;
@@ -65,7 +69,7 @@ export function AuthProvider({ children }: {
             user: User;
         }>("/api/auth/login", {
             method: "POST",
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email: email.trim(), password }),
         });
         if (!r.ok)
             return { ok: false as const, error: r.error };
@@ -73,6 +77,7 @@ export function AuthProvider({ children }: {
             return { ok: false as const, error: "You are offline" };
         if (!("data" in r) || !r.data?.user)
             return { ok: false as const, error: "Unexpected response" };
+        authEpochRef.current++;
         setUser(r.data.user);
         return { ok: true as const };
     }, []);
@@ -82,9 +87,9 @@ export function AuthProvider({ children }: {
         }>("/api/auth/register", {
             method: "POST",
             body: JSON.stringify({
-                email,
+                email: email.trim(),
                 password,
-                fullName,
+                fullName: fullName.trim(),
                 role,
                 ...(secondaryRole ? { secondaryRole } : {}),
             }),
@@ -95,6 +100,7 @@ export function AuthProvider({ children }: {
             return { ok: false as const, error: "You are offline" };
         if (!("data" in r) || !r.data?.user)
             return { ok: false as const, error: "Unexpected response" };
+        authEpochRef.current++;
         setUser(r.data.user);
         return { ok: true as const };
     }, []);
@@ -111,10 +117,12 @@ export function AuthProvider({ children }: {
             return { ok: false as const, error: "You are offline" };
         if (!("data" in r) || !r.data?.user)
             return { ok: false as const, error: "Unexpected response" };
+        authEpochRef.current++;
         setUser(r.data.user);
         return { ok: true as const };
     }, []);
     const logout = useCallback(async () => {
+        authEpochRef.current++;
         await api("/api/auth/logout", { method: "POST" });
         setUser(null);
     }, []);
