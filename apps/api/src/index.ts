@@ -1,5 +1,10 @@
-import "dotenv/config";
+import dotenv from "dotenv";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __apiDir = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__apiDir, "../.env") });
+
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
