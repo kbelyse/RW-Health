@@ -41,7 +41,7 @@
 9. **Stop**  
    Press **Ctrl+C** in that terminal.
 
-### Demo accounts (after `npm run db:seed`) -- These accounts works only loaclly
+### Demo accounts (after `npm run db:seed`) — these exist only after you run seed on that database (local `dev.db` vs production are different files)
 
 | Role | Email | Password |
 |------|--------|----------|

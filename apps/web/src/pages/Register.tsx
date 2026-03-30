@@ -42,13 +42,22 @@ export function Register() {
         else if ((role === "CLINICIAN" || role === "LAB") && dualPatient) {
             secondaryRole = "PATIENT";
         }
-        const r = await register(email, password, fullName, role, secondaryRole);
-        setLoading(false);
-        if (!r.ok) {
-            setErr(r.error ?? "Failed");
-            return;
+        try {
+            const r = await register(email, password, fullName, role, secondaryRole);
+            if (!r.ok) {
+                const msg = r.error ?? "Failed";
+                setErr(
+                    /already registered/i.test(msg)
+                        ? `${msg} If you already submitted this form, go to Sign in and use the same email and password.`
+                        : msg,
+                );
+                return;
+            }
+            nav("/dashboard");
         }
-        nav("/dashboard");
+        finally {
+            setLoading(false);
+        }
     }
     return (<AuthLayout heroTitle="Welcome to RW-Health" heroSubtitle="Create your passport: choose a role, use a strong password, and explore the full demo.">
       <div>
