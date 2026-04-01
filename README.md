@@ -62,11 +62,3 @@ Optional: to run a **production build** on your machine after `npm run build`, u
 | `apps/api` | Express + Prisma + SQLite |
 | `packages/shared` | Shared TypeScript types |
 
----
-
-| Setting | Value |
-|--------|--------|
-| Root directory | *(monorepo root)* |
-| Build command | `npm run build:render` |
-| Start command | `npm run start:prod` |
-| Env `CORS_ORIGIN` | Your public site URL (e.g. `https://rw-health.onrender.com`). Comma‑separate multiple origins. Required if the browser sends an `Origin` header that must match for credentialed requests. |
